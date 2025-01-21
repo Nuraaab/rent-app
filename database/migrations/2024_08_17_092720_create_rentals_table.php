@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string("title");
             $table->longText("description");
             $table->string("max_number_of_gusts");
-            $table->string("number_of_bedrooms");
+            $table->string("number_of_bedrooms");                                                                                                                                                                                                                                                       
             $table->string("number_of_baths");
             $table->string("phone_number");
             $table->string("address");

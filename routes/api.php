@@ -15,6 +15,8 @@ use App\Http\Controllers\HouseOfferController;
 use App\Http\Controllers\JobCategoryController;
 use App\Http\Controllers\ResponsiblityController;
 use App\Http\Controllers\QualificationController;
+use App\Http\Controllers\FavoriteController;
+use App\Http\Controllers\ApplicationsReservationController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -64,13 +66,28 @@ Route::group(['middleware'=>['auth:sanctum']],function(){
     Route::post('/qualification/update/{id}', [QualificationController::class, 'updateQualification'])->name('updatequalification');
     Route::delete('/qualification/delete/{id}', [QualificationController::class, 'deleteQualification'])->name('deletequalification');
 
+    Route::post('/favorites/add', [FavoriteController::class, 'addFavorite'])->name('add_favorite');
+    Route::post('/favorites/remove', [FavoriteController::class, 'removeFavorite'])->name('remove_favorite');
+    Route::get('/favorites', [FavoriteController::class, 'getFavorites'])->name('get_favorite');
+    Route::get('/jobfavorites', [FavoriteController::class, 'getJobFavorites'])->name('get_jobfavorite');
+    Route::post('/check-rental-favorite', [FavoriteController::class, 'checkRentalFavoriteStatus']);
+    Route::post('/check-job-favorite', [FavoriteController::class, 'checkJobFavoriteStatus']);
+    Route::delete('/remove-rental-favorite', [FavoriteController::class, 'removeRentalFavorite']);
+    Route::delete('/remove-job-favorite', [FavoriteController::class, 'removeJobFavorite']);
+
+    Route::post('/applications', [ApplicationsReservationController::class, 'create']);
+    Route::get('/applications', [ApplicationsReservationController::class, 'index']); 
+    Route::get('/applications/forme', [ApplicationsReservationController::class, 'appForMe']);
 });
 
 Route::controller(UserController::class)->group(function () {
     Route::post('/auth/register', 'register')->name('register');
     Route::post('/auth/login', 'login')->name('login');
     Route::get('/user/{id}', 'getUser')->name('getuser');
-   
+    Route::post('/auth/phone_auth', 'phoneAuth')->name('phone_auth');
+    Route::post('/auth/google_auth', 'googleAuth')->name('google_auth');
+    Route::post('/auth/apple_auth', 'appleAuth')->name('apple_auth');
+    Route::post('/auth/facebook_auth', 'facebookAuth')->name('facebook_auth');
 });
 
 Route::controller(RentalController::class)->group(function () {
