@@ -29,9 +29,9 @@ class RentalResource extends JsonResource
             'house_offer' =>$this->house_offer->map(function ($offer) {
               return new HouseOfferResource($offer);
                 }),
+            'user' => $this->user ? $this->user : null,
             'description' => $this->description,
-            'category_id' => $this->category->id,
-            'category_name' => $this->category->cat_name,
+            'category' => $this->category,
             'max_number_of_gusts' => $this->max_number_of_gusts,
             'number_of_bedrooms' => $this->number_of_bedrooms,
             'number_of_baths' => $this->number_of_baths,

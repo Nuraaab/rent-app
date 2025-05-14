@@ -10,6 +10,7 @@ class Rental extends Model
     use HasFactory;
     protected $fillable=[
         'title',
+        'category',
         'description',
         'category_id',
         'max_number_of_gusts',

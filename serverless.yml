@@ -1,0 +1,21 @@
+service: laravel-app
+
+provider:
+  name: aws
+  runtime: php-82
+  region: us-east-1
+  memorySize: 1024
+  timeout: 28
+
+functions:
+  web:
+    handler: public/index.php
+    runtime: php-82-fpm
+    timeout: 28
+    events:
+      - httpApi: '*'
+  
+plugins:
+  - ./vendor/bref/bref
+
+

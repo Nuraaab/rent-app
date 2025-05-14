@@ -23,7 +23,8 @@ class User extends Authenticatable
         'email',
         'password',
         'phone_number',
-        'profile_image_path'
+        'profile_image_path',
+        'firebase_uid'
     ];
     public function job(){
          return $this->hasMany(Job::class);

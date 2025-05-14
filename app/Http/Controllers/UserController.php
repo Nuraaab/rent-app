@@ -10,17 +10,20 @@ use App\Http\Requests\UserRequest;
 use App\Http\Resources\UserResource;
 use Kreait\Firebase\Auth as FirebaseAuth;
 use Kreait\Firebase\Factory;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 class UserController extends Controller
 {
     public function __construct(FirebaseAuth $firebaseAuth)
     {
         $this->firebaseAuth = $firebaseAuth;
     }
-    public function getUser($id){
-        $user = User::find($id);
-        $response=[$user];
-        return response($response,200); 
-    }
+    // public function getUser($id){
+    //     $user = User::find($id);
+    //     $response=[$user];
+    //     return response($response,200); 
+    // }
    
     public function register(UserRequest $request){
         $user=User::create([
@@ -48,6 +51,15 @@ class UserController extends Controller
         
         return response($response,200);
     }
+    public function checkAuth(Request $request)
+        {
+            // If the user is authenticated, the token is valid
+            if (auth()->check()) {
+                return response()->json(['message' => 'User is authenticated'], 200);
+            } else {
+                return response()->json(['error' => 'User not authenticated'], 401);
+            }
+        }
 
     // public function login(Request $request)
     // {
@@ -87,40 +99,65 @@ class UserController extends Controller
 
     public function login(Request $request)
     {
-        $fields = $request->validate([
-            'email' => 'required',
-            'password' => 'required'
+        $validator = Validator::make($request->all(), [
+            'email' => [
+                'required', 
+                'email', 
+                'max:255', 
+                'regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/'
+            ],
+            'password' => 'required|string|min:6'
         ]);
-
+    
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors(),
+            ], 422);
+        }
+    
+        $fields = $validator->validated();
+        
+        // Check if the email already exists
         $user = User::where('email', $fields['email'])->first();
+    
         if (!$user) {
+            // If the email does not exist, register the user
+            $existingEmail = User::where('email', $fields['email'])->exists();
+            if ($existingEmail) {
+                return response()->json([
+                    'message' => 'Email already in use. Please use Google or another method to log in.',
+                ], 400);
+            }
+    
             $user = User::create([
                 'email' => $fields['email'],
                 'password' => Hash::make($fields['password']),
             ]);
             $message = 'You are registered and logged in';
         } else {
+            // If the user exists, verify the password
             if (!Hash::check($fields['password'], $user->password)) {
-                return response([
+                return response()->json([
                     'message' => 'Credentials not correct',
                 ], 401);
             }
             $message = 'You are logged in';
         }
-
+    
+        // Generate token
         $token = $user->createToken('myapptoken')->plainTextToken;
-
-        $response = [
+    
+        return response()->json([
             'message' => $message,
             'user' => [
                 'id' => $user->id,
                 'email' => $user->email,
             ],
             'token' => $token,
-        ];
-
-        return response($response, 200);
+            'expires_in' => Carbon::now()->addDays(180),
+        ], 200);
     }
+    
 
     public function phoneAuth(Request $request)
     {
@@ -140,7 +177,7 @@ class UserController extends Controller
             );
             $token = $user->createToken('myapptoken')->plainTextToken;
     
-            return response()->json(['message' => 'Login successful', 'user' => $user, 'token' => $token]);
+            return response()->json(['message' => 'Login successful', 'user' => $user, 'token' => $token, 'expires_in' => Carbon::now()->addDays(180)]);
         } catch (\Kreait\Firebase\Exception\Auth\InvalidIdToken $e) {
             return response()->json(['error' => 'Invalid token'], 401);
         } catch (\Kreait\Firebase\Exception\Auth\AuthError $e) {
@@ -149,65 +186,179 @@ class UserController extends Controller
     }
 
 
+    // public function googleAuth(Request $request)
+    //     {
+    //         $firebase = (new Factory)
+    //             ->withServiceAccount(config('firebase.credentials'));
+    //         $validatedData = $request->validate([
+    //             'first_name' => 'required|string|max:255',
+    //             'last_name' => 'required|string|max:255',
+    //             'email' => 'required|email|max:255',
+    //             'id_token' => 'required|string'
+    //         ]);
+        
+    //         $first_name = $validatedData['first_name'];
+    //         $last_name = $validatedData['last_name'];
+    //         $email = $validatedData['email'];
+    //         $firebaseUid = $validatedData['id_token'];
+        
+    //         try {
+    //             // Check if the email already exists in the system
+    //             $user = User::where('email', $email)->where('firebase_uid', $firebaseUid)->first();
+        
+    //             if ($user) {
+    //                 // If user exists, log them in
+    //                 $token = $user->createToken('myapptoken')->plainTextToken;
+        
+    //                 return response()->json([
+    //                     'message' => 'User logged in successfully',
+    //                     'user' => $user,
+    //                     'email' => $email,
+    //                     'token' => $token,
+    //                 ], 200);
+    //             } else {
+    //                 // If email is not found, check if it exists with a different registration method
+    //                 $existingEmail = User::where('email', $email)->exists();
+    //                 if ($existingEmail) {
+    //                     return response()->json([
+    //                         'message' => 'Email already in use. Please use a different method to log in.',
+    //                     ], 400);
+    //                 }
+        
+    //                 // Register the new user
+    //                 $newUser = User::create([
+    //                     'first_name' => $first_name,
+    //                     'last_name' => $last_name,
+    //                     'email' => $email,
+    //                     'firebase_uid' => $firebaseUid,
+    //                 ]);
+    //                 $token = $newUser->createToken('myapptoken')->plainTextToken;
+        
+    //                 return response()->json([
+    //                     'message' => 'User registered successfully',
+    //                     'user' => $newUser,
+    //                     'email' => $email,
+    //                     'expires_in' => Carbon::now()->addDays(180),
+    //                     'token' => $token,
+    //                 ], 200);
+    //             }
+    //         } catch (\Kreait\Firebase\Exception\Auth\InvalidIdToken $e) {
+    //             return response()->json([
+    //                 'message' => 'Invalid token: ' . $e->getMessage(),
+    //             ], 401);
+    //         } catch (\Exception $e) {
+    //             return response()->json([
+    //                 'message' => 'An unexpected error occurred: ' . $e->getMessage(),
+    //             ], 500);
+    //         }
+    //     }
+
     public function googleAuth(Request $request)
     {
         $firebase = (new Factory)
-            ->withServiceAccount(config('firebase.credentials'));
+            ->withServiceAccount(config('firebase.credentials'))
+            ->createAuth();
+    
         $validatedData = $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
+            'id_token' => 'required|string',
         ]);
     
-        $first_name = $validatedData['first_name'];
-        $last_name = $validatedData['last_name'];
-        $email = $validatedData['email'];
+        $idToken = $validatedData['id_token'];
     
         try {
-            $user = User::where('email', $email)->first();
+            $verifiedToken = $firebase->verifyIdToken($idToken);
+            $claims = $verifiedToken->claims()->all();
     
+            $firebaseUid = $claims['sub'] ?? null; 
+            $email = $claims['email'] ?? null;
+            $fullName = $claims['name'] ?? '';
+            $nameParts = explode(' ', $fullName, 2); 
+            $first_name = $nameParts[0] ?? '';
+            $last_name = $nameParts[1] ?? '';
+    
+            if (!$firebaseUid) {
+                return response()->json(['message' => 'Firebase UID is required for authentication.'], 400);
+            }
+            $user = User::where('firebase_uid', $firebaseUid)->first();
             if ($user) {
                 $token = $user->createToken('myapptoken')->plainTextToken;
     
                 return response()->json([
                     'message' => 'User logged in successfully',
                     'user' => $user,
-                    'email' => $email,
                     'token' => $token,
+                    'firebaseUID' => $firebaseUid,
                 ], 200);
-            } else {
-                $newUser = User::create([
-                    'first_name' => $first_name,
-                    'last_name' => $last_name,
-                    'email' => $email,
-                ]);
-                $token = $newUser->createToken('myapptoken')->plainTextToken;
+            } 
+            $newUser = User::create([
+                'first_name' => $first_name,
+                'last_name' => $last_name,
+                'email' => $email,
+                'firebase_uid' => $firebaseUid, 
+            ]);
     
-                return response()->json([
-                    'message' => 'User registered successfully',
-                    'user' => $newUser,
-                    'email' => $email,
-                    'token' => $token,
-                ], 201);
-            }
+            $token = $newUser->createToken('myapptoken')->plainTextToken;
+    
+            return response()->json([
+                'message' => 'User registered successfully',
+                'user' => $newUser,
+                'token' => $token,
+                'firebaseUID' => $firebaseUid,
+                'expires_in' => Carbon::now()->addDays(180),
+            ], 200);
+    
         } catch (\Kreait\Firebase\Exception\Auth\InvalidIdToken $e) {
-            return response()->json([
-                'error' => 'Invalid token: ' . $e->getMessage(),
-            ], 401);
+            return response()->json(['message' => 'Invalid Firebase token: ' . $e->getMessage()], 401);
         } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'An unexpected error occurred: ' . $e->getMessage(),
-            ], 500);
+            Log::error('Google Auth Error: ' . $e->getMessage());
+            return response()->json(['message' => 'An unexpected error occurred.'], 500);
         }
     }
     
     
     
-    public function logout(Request $request){
-    auth()->user()->tokens()->delete();
-      $response = [
-        'message' => 'Logged Out Successful',
-      ];
-      return response($response,200);
+    
+    
+    
+    public function logout(Request $request) {
+        if (auth()->check()) {
+            auth()->user()->tokens()->delete(); // Revoke all API tokens
+            return response()->json(['message' => 'Logged Out Successfully'], 200);
+        }
+    
+        return response()->json(['error' => 'User not authenticated'], 401);
     }
+
+    // user
+    public function getUser(Request $request)
+    {
+        return response()->json([
+            'user' => $request->user()
+        ]);
+    }
+
+    // Update user profile
+    public function updateUser(Request $request)
+    {
+        $user = $request->user();
+        $validator = Validator::make($request->all(), [
+            'first_name' => 'sometimes|string|max:255',
+            'last_name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:users,email,' . $user->id,
+            'phone_number' => 'nullable|unique:users,phone_number,' . $user->id . '|regex:/^\+?[0-9]{10,15}$/',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 400);
+        }
+
+        // Update user details
+        $user->update($request->only('first_name', 'last_name', 'email', 'phone_number'));
+
+        return response()->json([
+            'message' => 'User updated successfully!',
+            'user' => $user
+        ]);
+    }
+    
 }

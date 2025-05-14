@@ -20,7 +20,6 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamp('applied_at')->nullable();
             $table->timestamps();
-
             // Foreign keys
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('job_position_id')->references('id')->on('job_positions')->onDelete('cascade');

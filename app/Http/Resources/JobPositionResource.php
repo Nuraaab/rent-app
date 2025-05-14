@@ -32,9 +32,8 @@ class JobPositionResource extends JsonResource
             'address' => $this->address,
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
-            'category_id' => $this->category->id,
-            'category_name' => $this->category->cat_name,
-            'category_type' => $this->category->cat_type,
+            'category' => $this->category,
+            'category_type' => 'Job',
             'user_id' => $this->user->id,
             'created_at' => $this->created_at,
         ];

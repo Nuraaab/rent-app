@@ -40,6 +40,11 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        'api' => [
+            'driver' => 'sanctum',  // This must be 'sanctum' to use Laravel Sanctum
+            'provider' => 'users',
+         ],
     ],
 
     /*

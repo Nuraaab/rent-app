@@ -32,13 +32,71 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+// Route::group(['middleware' => ['api.auth.check']], function () {
+//     Route::get('/auth/check-auth', [UserController::class, 'checkAuth'])->name('check-auth');
+//     Route::post('/auth/logout', [UserController::class, 'logout'])->name('logout');
+//     Route::get('/auth/getuser/{id}', [UserController::class, 'getUser'])->name('getuser');
+//     Route::post('/rental/add', [RentalController::class, 'addRental'])->name('addRental');
+//     Route::post('/rental/post', [RentalController::class, 'postRental'])->name('postRental');
+//     Route::post('/jobs/add', [JobPositionController::class, 'addJob'])->name('addjobs');
+
+//     Route::post('/category/add', [CategoryController::class, 'addCategory'])->name('addcategory');
+//     Route::post('/houseoffer/add', [HouseOfferController::class, 'addHouseOffer'])->name('addhouseoffer');
+
+//     Route::post('/housegallery/add', [HouseGallaryController::class, 'addHouseGallery'])->name('addhousegallery');
+//     Route::post('/bedgallery/add', [BedGalleryController::class, 'addBedGallery'])->name('addbedgallery');
+
+//     Route::post('/review/add', [ReviewController::class, 'addReview'])->name('addreview');
+
+//     Route::post('/responsibility/add', [ResponsibilityController::class, 'addResponsibility'])->name('addresponsibility');
+//     Route::post('/qualification/add', [QualificationController::class, 'addQualification'])->name('addqualification');
+
+//     Route::post('/rental/update/{id}', [RentalController::class, 'updateRental'])->name('updaterental');
+//     Route::post('/jobs/update/{id}', [JobPositionController::class, 'updateJob'])->name('updatejob');
+
+//     Route::delete('/rental/delete/{id}', [RentalController::class, 'deleteHouse'])->name('deletehouse');
+//     Route::delete('/jobs/delete/{id}', [JobPositionController::class, 'deleteJob'])->name('deletejob');
+
+//     Route::post('/houseoffer/update/{id}', [HouseOfferController::class, 'updateHouseOffer'])->name('updatehouseOffer');
+//     Route::delete('houseoffer/delete/{id}', [HouseOfferController::class, 'deleteHouseOffer'])->name('deleteHouseOffer');
+
+//     Route::post('/responsibility/update/{id}', [ResponsibilityController::class, 'updateResponsibility'])->name('updateresponsibility');
+//     Route::delete('/responsibility/delete/{id}', [ResponsibilityController::class, 'deleteResponsibility'])->name('deleteresponsibility');
+
+//     Route::post('/qualification/update/{id}', [QualificationController::class, 'updateQualification'])->name('updatequalification');
+//     Route::delete('/qualification/delete/{id}', [QualificationController::class, 'deleteQualification'])->name('deletequalification');
+
+//     Route::post('/favorites/add', [FavoriteController::class, 'addFavorite'])->name('add_favorite');
+//     Route::post('/favorites/remove', [FavoriteController::class, 'removeFavorite'])->name('remove_favorite');
+//     Route::get('/favorites', [FavoriteController::class, 'getFavorites'])->name('get_favorite');
+//     Route::get('/jobfavorites', [FavoriteController::class, 'getJobFavorites'])->name('get_jobfavorite');
+//     Route::post('/check-rental-favorite', [FavoriteController::class, 'checkRentalFavoriteStatus']);
+//     Route::post('/check-job-favorite', [FavoriteController::class, 'checkJobFavoriteStatus']);
+//     Route::delete('/remove-rental-favorite', [FavoriteController::class, 'removeRentalFavorite']);
+//     Route::delete('/remove-job-favorite', [FavoriteController::class, 'removeJobFavorite']);
+
+//     Route::post('/applications', [ApplicationsReservationController::class, 'create']);
+//     Route::get('/applications', [ApplicationsReservationController::class, 'index']); 
+//     Route::get('/applications/forme', [ApplicationsReservationController::class, 'appForMe']);
+// });
+
 
 Route::group(['middleware'=>['auth:sanctum']],function(){
+    // user
+    Route::get('/user', [UserController::class, 'getUser']); 
+    Route::post('/user/update', [UserController::class, 'updateUser']);
+    // user end
+    Route::get('/auth/check-auth', [UserController::class, 'checkAuth'])->name('check-auth');
     Route::post('/auth/logout', [UserController::class, 'logout'])->name('logout');
     Route::get('/auth/getuser/{id}', [UserController::class, 'getUser'])->name('getuser');
     Route::post('/rental/add', [RentalController::class, 'addRental'])->name('addRental');
+    Route::post('/rental/post', [RentalController::class, 'postRental'])->name('postRental');
     Route::post('/jobs/add', [JobPositionController::class, 'addJob'])->name('addiobs');
+    Route::post('/jobs/addnew', [JobPositionController::class, 'postJob'])->name('postJob');
 
+    Route::post('/rental/gallery/{id}', [RentalController::class, 'updateGallery'])->name('updateGallery');
+    Route::delete('/rental/gallery/delete/{id}', [RentalController::class, 'deleteGallery'])->name('deleteGallery');
+    Route::delete('/rental/bedGallery/delete/{id}', [RentalController::class, 'deleteBedGallery'])->name('deleteBedGallery');
     Route::post('/category/add', [CategoryController::class, 'addCategory'])->name('addcategory');
     Route::post('/houseoffer/add', [HouseOfferController::class, 'addHouseOffer'])->name('addhouseoffer');
 
@@ -68,8 +126,7 @@ Route::group(['middleware'=>['auth:sanctum']],function(){
 
     Route::post('/favorites/add', [FavoriteController::class, 'addFavorite'])->name('add_favorite');
     Route::post('/favorites/remove', [FavoriteController::class, 'removeFavorite'])->name('remove_favorite');
-    Route::get('/favorites', [FavoriteController::class, 'getFavorites'])->name('get_favorite');
-    Route::get('/jobfavorites', [FavoriteController::class, 'getJobFavorites'])->name('get_jobfavorite');
+   
     Route::post('/check-rental-favorite', [FavoriteController::class, 'checkRentalFavoriteStatus']);
     Route::post('/check-job-favorite', [FavoriteController::class, 'checkJobFavoriteStatus']);
     Route::delete('/remove-rental-favorite', [FavoriteController::class, 'removeRentalFavorite']);
@@ -78,6 +135,8 @@ Route::group(['middleware'=>['auth:sanctum']],function(){
     Route::post('/applications', [ApplicationsReservationController::class, 'create']);
     Route::get('/applications', [ApplicationsReservationController::class, 'index']); 
     Route::get('/applications/forme', [ApplicationsReservationController::class, 'appForMe']);
+    Route::post('/applications/status/{id}', [ApplicationsReservationController::class, 'updateStatus'])->name('updateStatus');
+    Route::delete('/applications/cancel/{id}', [ApplicationsReservationController::class, 'cancelStatus'])->name('cancelStatus');
 });
 
 Route::controller(UserController::class)->group(function () {
@@ -93,18 +152,20 @@ Route::controller(UserController::class)->group(function () {
 Route::controller(RentalController::class)->group(function () {
     Route::get('/rental', 'getRental')->name('rental');
 });
+Route::get('/favorites', [FavoriteController::class, 'getFavorites'])->name('get_favorite');
+Route::get('/jobfavorites', [FavoriteController::class, 'getJobFavorites'])->name('get_jobfavorite');
 
 Route::controller(UploadImageController::class)->group(function () {
     Route::post('upload/single', 'uploadSingleImage')->name('singleimage');
     Route::post('upload/multiple', 'uploadMultipleImage')->name('multipleimage');
-
+    Route::post('uploadTest', 'upload')->name('uploadTest');
     Route::get('getimages/{fileName}', 'getImage')->name('getsingleimage');
     Route::get('getimages/multiple', 'getMultipleImage')->name('getmultipleimage');
 });
 
 Route::controller(HouseGallaryController::class)->group(function () {
     Route::get('/housegallery', 'getHouseGallery')->name('housegallery');
-    Route::post('housegallery/upload','uploadImage')->name('image');
+    Route::post('/housegallery/upload','uploadImage')->name('image');
 });
 
 Route::controller(BedGalleryController::class)->group(function () {
