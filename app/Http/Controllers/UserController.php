@@ -253,67 +253,84 @@ class UserController extends Controller
     //         }
     //     }
 
-    public function googleAuth(Request $request)
-    {
-        $firebase = (new Factory)
-            ->withServiceAccount(config('firebase.credentials'))
-            ->createAuth();
-    
-        $validatedData = $request->validate([
-            'id_token' => 'required|string',
-        ]);
-    
-        $idToken = $validatedData['id_token'];
-    
-        try {
-            $verifiedToken = $firebase->verifyIdToken($idToken);
-            $claims = $verifiedToken->claims()->all();
-    
-            $firebaseUid = $claims['sub'] ?? null; 
-            $email = $claims['email'] ?? null;
-            $fullName = $claims['name'] ?? '';
-            $nameParts = explode(' ', $fullName, 2); 
-            $first_name = $nameParts[0] ?? '';
-            $last_name = $nameParts[1] ?? '';
-    
-            if (!$firebaseUid) {
-                return response()->json(['message' => 'Firebase UID is required for authentication.'], 400);
-            }
-            $user = User::where('firebase_uid', $firebaseUid)->first();
+public function googleAuth(Request $request)
+{
+    $firebase = (new Factory)
+        ->withServiceAccount(config('firebase.credentials'))
+        ->createAuth();
+
+    $validatedData = $request->validate([
+        'id_token' => 'required|string',
+    ]);
+
+    $idToken = $validatedData['id_token'];
+
+    try {
+        $verifiedToken = $firebase->verifyIdToken($idToken);
+        $claims = $verifiedToken->claims()->all();
+
+        $firebaseUid = $claims['sub'] ?? null; 
+        $email = $claims['email'] ?? null;
+        $fullName = $claims['name'] ?? '';
+        $nameParts = explode(' ', $fullName, 2); 
+        $first_name = $nameParts[0] ?? '';
+        $last_name = $nameParts[1] ?? '';
+
+        if (!$firebaseUid || !$email) {
+            return response()->json(['message' => 'Firebase UID and email are required.'], 400);
+        }
+
+        // Try to find user by firebase_uid first
+        $user = User::where('firebase_uid', $firebaseUid)->first();
+
+        // If not found, try by email (maybe registered by email/password first)
+        if (!$user) {
+            $user = User::where('email', $email)->first();
+
             if ($user) {
-                $token = $user->createToken('myapptoken')->plainTextToken;
-    
-                return response()->json([
-                    'message' => 'User logged in successfully',
-                    'user' => $user,
-                    'token' => $token,
-                    'firebaseUID' => $firebaseUid,
-                ], 200);
-            } 
-            $newUser = User::create([
-                'first_name' => $first_name,
-                'last_name' => $last_name,
-                'email' => $email,
-                'firebase_uid' => $firebaseUid, 
-            ]);
-    
-            $token = $newUser->createToken('myapptoken')->plainTextToken;
-    
+                // Update user with Firebase UID
+                $user->firebase_uid = $firebaseUid;
+                $user->save();
+            }
+        }
+
+        if ($user) {
+            $token = $user->createToken('myapptoken')->plainTextToken;
+
             return response()->json([
-                'message' => 'User registered successfully',
-                'user' => $newUser,
+                'message' => 'User logged in successfully',
+                'user' => $user,
                 'token' => $token,
                 'firebaseUID' => $firebaseUid,
-                'expires_in' => Carbon::now()->addDays(180),
             ], 200);
-    
-        } catch (\Kreait\Firebase\Exception\Auth\InvalidIdToken $e) {
-            return response()->json(['message' => 'Invalid Firebase token: ' . $e->getMessage()], 401);
-        } catch (\Exception $e) {
-            Log::error('Google Auth Error: ' . $e->getMessage());
-            return response()->json(['message' => 'An unexpected error occurred.'], 500);
         }
+
+        // Create new user if not found at all
+        $newUser = User::create([
+            'first_name' => $first_name,
+            'last_name' => $last_name,
+            'email' => $email,
+            'firebase_uid' => $firebaseUid, 
+        ]);
+
+        $token = $newUser->createToken('myapptoken')->plainTextToken;
+
+        return response()->json([
+            'message' => 'User registered successfully',
+            'user' => $newUser,
+            'token' => $token,
+            'firebaseUID' => $firebaseUid,
+            'expires_in' => Carbon::now()->addDays(180),
+        ], 200);
+
+    } catch (\Kreait\Firebase\Exception\Auth\InvalidIdToken $e) {
+        return response()->json(['message' => 'Invalid Firebase token: ' . $e->getMessage()], 401);
+    } catch (\Exception $e) {
+        Log::error('Google Auth Error: ' . $e->getMessage());
+        return response()->json(['message' => 'An unexpected error occurred.'], 500);
     }
+}
+
     
     
     
