@@ -101,52 +101,46 @@ class UserController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'email' => [
-                'required', 
-                'email', 
-                'max:255', 
+                'required',
+                'email',
+                'max:255',
                 'regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/'
             ],
-            'password' => 'required|string|min:6'
+            'password' => 'required|string|min:6',
         ]);
-    
+
         if ($validator->fails()) {
-            return response()->json([
-                'message' => $validator->errors(),
-            ], 422);
+            return response()->json(['message' => $validator->errors()], 422);
         }
-    
+
         $fields = $validator->validated();
-        
-        // Check if the email already exists
         $user = User::where('email', $fields['email'])->first();
-    
+
         if (!$user) {
-            // If the email does not exist, register the user
-            $existingEmail = User::where('email', $fields['email'])->exists();
-            if ($existingEmail) {
-                return response()->json([
-                    'message' => 'Email already in use. Please use Google or another method to log in.',
-                ], 400);
-            }
-    
+            // Register new user
             $user = User::create([
                 'email' => $fields['email'],
                 'password' => Hash::make($fields['password']),
             ]);
             $message = 'You are registered and logged in';
         } else {
-            // If the user exists, verify the password
-            if (!Hash::check($fields['password'], $user->password)) {
+            // Block Firebase users from password login
+            if ($user->firebase_uid) {
                 return response()->json([
-                    'message' => 'Credentials not correct',
-                ], 401);
+                    'message' => 'This email is linked with Google login. Please use Google to sign in.',
+                ], 400);
             }
+
+            // Check password
+            if (!Hash::check($fields['password'], $user->password)) {
+                return response()->json(['message' => 'Incorrect email or password'], 401);
+            }
+
             $message = 'You are logged in';
         }
-    
-        // Generate token
+
         $token = $user->createToken('myapptoken')->plainTextToken;
-    
+
         return response()->json([
             'message' => $message,
             'user' => [
@@ -157,6 +151,7 @@ class UserController extends Controller
             'expires_in' => Carbon::now()->addDays(180),
         ], 200);
     }
+
     
 
     public function phoneAuth(Request $request)
@@ -253,90 +248,78 @@ class UserController extends Controller
     //         }
     //     }
 
-public function googleAuth(Request $request)
-{
-    $firebase = (new Factory)
-        ->withServiceAccount(config('firebase.credentials'))
-        ->createAuth();
+    public function googleAuth(Request $request)
+    {
+        $firebase = (new Factory)
+            ->withServiceAccount(config('firebase.credentials'))
+            ->createAuth();
 
-    $validatedData = $request->validate([
-        'id_token' => 'required|string',
-    ]);
-
-    $idToken = $validatedData['id_token'];
-
-    try {
-        $verifiedToken = $firebase->verifyIdToken($idToken);
-        $claims = $verifiedToken->claims()->all();
-
-        $firebaseUid = $claims['sub'] ?? null; 
-        $email = $claims['email'] ?? null;
-        $fullName = $claims['name'] ?? '';
-        $nameParts = explode(' ', $fullName, 2); 
-        $first_name = $nameParts[0] ?? '';
-        $last_name = $nameParts[1] ?? '';
-
-        if (!$firebaseUid || !$email) {
-            return response()->json(['message' => 'Firebase UID and email are required.'], 400);
-        }
-
-        // Try to find user by firebase_uid first
-        $user = User::where('firebase_uid', $firebaseUid)->first();
-
-        // If not found, try by email (maybe registered by email/password first)
-        if (!$user) {
-            $user = User::where('email', $email)->first();
-
-            if ($user) {
-                // Update user with Firebase UID
-                $user->firebase_uid = $firebaseUid;
-                $user->save();
-            }
-        }
-
-        if ($user) {
-            $token = $user->createToken('myapptoken')->plainTextToken;
-
-            return response()->json([
-                'message' => 'User logged in successfully',
-                'user' => $user,
-                'token' => $token,
-                'firebaseUID' => $firebaseUid,
-            ], 200);
-        }
-
-        // Create new user if not found at all
-        $newUser = User::create([
-            'first_name' => $first_name,
-            'last_name' => $last_name,
-            'email' => $email,
-            'firebase_uid' => $firebaseUid, 
+        $validatedData = $request->validate([
+            'id_token' => 'required|string',
         ]);
 
-        $token = $newUser->createToken('myapptoken')->plainTextToken;
+        $idToken = $validatedData['id_token'];
 
-        return response()->json([
-            'message' => 'User registered successfully',
-            'user' => $newUser,
-            'token' => $token,
-            'firebaseUID' => $firebaseUid,
-            'expires_in' => Carbon::now()->addDays(180),
-        ], 200);
+        try {
+            $verifiedToken = $firebase->verifyIdToken($idToken);
+            $claims = $verifiedToken->claims()->all();
 
-    } catch (\Kreait\Firebase\Exception\Auth\InvalidIdToken $e) {
-        return response()->json(['message' => 'Invalid Firebase token: ' . $e->getMessage()], 401);
-    } catch (\Exception $e) {
-        Log::error('Google Auth Error: ' . $e->getMessage());
-        return response()->json(['message' => 'An unexpected error occurred.'], 500);
+            $firebaseUid = $claims['sub'] ?? null; 
+            $email = $claims['email'] ?? null;
+            $fullName = $claims['name'] ?? '';
+            $nameParts = explode(' ', $fullName, 2); 
+            $first_name = $nameParts[0] ?? '';
+            $last_name = $nameParts[1] ?? '';
+
+            if (!$firebaseUid || !$email) {
+                return response()->json(['message' => 'Firebase UID and email are required.'], 400);
+            }
+            $user = User::where('firebase_uid', $firebaseUid)->first();
+            if (!$user) {
+                $user = User::where('email', $email)->first();
+
+                if ($user) {
+                    $user->firebase_uid = $firebaseUid;
+                    $user->save();
+                }
+            }
+
+            if ($user) {
+                $token = $user->createToken('myapptoken')->plainTextToken;
+
+                return response()->json([
+                    'message' => 'User logged in successfully',
+                    'user' => $user,
+                    'token' => $token,
+                    'firebaseUID' => $firebaseUid,
+                ], 200);
+            }
+            $newUser = User::create([
+                'first_name' => $first_name,
+                'last_name' => $last_name,
+                'email' => $email,
+                'firebase_uid' => $firebaseUid, 
+            ]);
+
+            $token = $newUser->createToken('myapptoken')->plainTextToken;
+
+            return response()->json([
+                'message' => 'User registered successfully',
+                'user' => $newUser,
+                'token' => $token,
+                'firebaseUID' => $firebaseUid,
+                'expires_in' => Carbon::now()->addDays(180),
+            ], 200);
+
+        } catch (\Kreait\Firebase\Exception\Auth\InvalidIdToken $e) {
+            return response()->json(['message' => 'Invalid Firebase token: ' . $e->getMessage()], 401);
+        } catch (\Exception $e) {
+            Log::error('Google Auth Error: ' . $e->getMessage());
+            return response()->json(['message' => 'An unexpected error occurred.'], 500);
+        }
     }
-}
 
-    
-    
-    
-    
-    
-    
+  
     public function logout(Request $request) {
         if (auth()->check()) {
             auth()->user()->tokens()->delete(); // Revoke all API tokens
