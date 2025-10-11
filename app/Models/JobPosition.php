@@ -21,7 +21,36 @@ class JobPosition extends Model
         'address',
         'latitude',
         'longitude',
-        'user_id'
+        'user_id',
+        // Company fields
+        'company_name',
+        'contact_name',
+        'contact_email',
+        'contact_phone',
+        'website',
+        // Role fields
+        'employment_type',
+        'seniority',
+        // Location fields
+        'work_modality',
+        'working_days',
+        'start_time',
+        'end_time',
+        'weekend_work',
+        // Compensation fields
+        'pay_type',
+        'min_salary',
+        'max_salary',
+        'pay_cadence',
+        'equity',
+        'benefits',
+        // Requirements fields
+        'experience',
+        'must_have_skills',
+        'auth_required',
+        // Screening fields
+        'resume_required',
+        'quick_apply',
     ];
     public function category(){
       return $this->belongsTo(Category::class);

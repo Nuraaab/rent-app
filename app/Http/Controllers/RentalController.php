@@ -123,7 +123,7 @@ class RentalController extends Controller
                 $image->move(public_path('assets/images'), $filename);
                 
                 // Get full URL
-                $uploadedFile = asset('assets/images/' . $filename);
+                $uploadedFile = url('assets/images/' . $filename);
                 
                 HouseGallary::create([
                     'rental_id' => $rentalId,
@@ -143,7 +143,7 @@ class RentalController extends Controller
                 $image->move(public_path('assets/images'), $filename);
                 
                 // Get full URL
-                $uploadedBedImage = asset('assets/images/' . $filename);
+                $uploadedBedImage = url('assets/images/' . $filename);
                 
                 BedGallery::create([
                     'rental_id' => $rentalId,
@@ -221,7 +221,7 @@ class RentalController extends Controller
                 $image->move(public_path('assets/images'), $filename);
                 
                 // Get full URL
-                $uploadedFile = asset('assets/images/' . $filename);
+                $uploadedFile = url('assets/images/' . $filename);
                 
                 HouseGallary::create([
                     'rental_id' => $rentalId,
@@ -241,7 +241,7 @@ class RentalController extends Controller
                 $image->move(public_path('assets/images'), $filename);
                 
                 // Get full URL
-                $uploadedBedImage = asset('assets/images/' . $filename);
+                $uploadedBedImage = url('assets/images/' . $filename);
                 
                 BedGallery::create([
                     'rental_id' => $rentalId,

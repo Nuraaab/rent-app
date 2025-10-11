@@ -91,6 +91,35 @@ class JobPositionController extends Controller
             'longitude' => $request->longitude,
             'category_id' => $request->category_id,
             'user_id' => $request->user_id,
+            // Company fields
+            'company_name' => $request->company_name,
+            'contact_name' => $request->contact_name,
+            'contact_email' => $request->contact_email,
+            'contact_phone' => $request->contact_phone,
+            'website' => $request->website,
+            // Role fields
+            'employment_type' => $request->employment_type,
+            'seniority' => $request->seniority,
+            // Location fields
+            'work_modality' => $request->work_modality,
+            'working_days' => $request->working_days,
+            'start_time' => $request->start_time,
+            'end_time' => $request->end_time,
+            'weekend_work' => $request->weekend_work ?? false,
+            // Compensation fields
+            'pay_type' => $request->pay_type,
+            'min_salary' => $request->min_salary,
+            'max_salary' => $request->max_salary,
+            'pay_cadence' => $request->pay_cadence,
+            'equity' => $request->equity,
+            'benefits' => $request->benefits, // JSON string
+            // Requirements fields
+            'experience' => $request->experience,
+            'must_have_skills' => $request->must_have_skills, // JSON string
+            'auth_required' => $request->auth_required ?? false,
+            // Screening fields
+            'resume_required' => $request->resume_required ?? true,
+            'quick_apply' => $request->quick_apply ?? false,
             ]);
 
             $jobId = $jobs->id;

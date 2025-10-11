@@ -23,25 +23,63 @@ class JobRequest extends FormRequest
     {
         return [
             'title'=> 'required|string|max:255',
-            'category'=> 'required|string|max:255',
-            'job_salary' => 'required|numeric|min:0',
-            'job_type'=> 'required|string|in:Full-time,Part-time,Contract,Internship',
-            'client'=> 'required|string|max:255',
-            'deadline'=> 'required|date|after_or_equal:today',
-            'description'=> 'required|string|min:10',
-            'phone_number' => 'required|regex:/^(\+?\d{1,3}[- ]?)?\d{10}$/',
-            'address' => 'required|string|max:255',
-            'latitude'=> 'required|numeric|between:-90,90',
-            'longitude'=> 'required|numeric|between:-180,180',
-            'user_id'=> 'required|exists:users,id',
+            'description'=> 'nullable|string|min:10',
+            'phone_number' => 'nullable|string',
+            'address' => 'nullable|string|max:255',
+            'latitude'=> 'nullable|numeric|between:-90,90',
+            'longitude'=> 'nullable|numeric|between:-180,180',
+            'user_id'=> 'required',
+            
+            // Company fields
+            'company_name' => 'nullable|string|max:255',
+            'contact_name' => 'nullable|string|max:255',
+            'contact_email' => 'nullable|email|max:255',
+            'contact_phone' => 'nullable|string|max:20',
+            'website' => 'nullable|url|max:255',
+            
+            // Role fields
+            'employment_type' => 'nullable|string|max:50',
+            'seniority' => 'nullable|string|max:50',
+            'job_type'=> 'nullable|string|max:50',
+            'job_salary' => 'nullable|string|max:255',
+            
+            // Location fields
+            'work_modality' => 'nullable|string|max:50',
+            'working_days' => 'nullable|string|max:255',
+            'start_time' => 'nullable|string|max:20',
+            'end_time' => 'nullable|string|max:20',
+            'weekend_work' => 'nullable|boolean',
+            
+            // Compensation fields
+            'pay_type' => 'nullable|string|max:50',
+            'min_salary' => 'nullable|string|max:50',
+            'max_salary' => 'nullable|string|max:50',
+            'pay_cadence' => 'nullable|string|max:50',
+            'equity' => 'nullable|string|max:255',
+            'benefits' => 'nullable|string',
+            
+            // Requirements fields
+            'experience' => 'nullable|string|max:255',
+            'must_have_skills' => 'nullable|string',
+            'auth_required' => 'nullable|boolean',
+            
+            // Screening fields
+            'resume_required' => 'nullable|boolean',
+            'quick_apply' => 'nullable|boolean',
+            
+            // Old fields (kept for backward compatibility)
+            'category'=> 'nullable|string|max:255',
+            'category_id'=> 'nullable|exists:categories,id',
+            'client'=> 'nullable|string|max:255',
+            'deadline'=> 'nullable|date',
 
-            // Validation for job responsibilities
-            'job_responsibility'=> 'required|array|min:1',
-            'job_responsibility.*.responsiblity' => 'required|string|min:5',
+            // Validation for job responsibilities (optional)
+            'job_responsibility'=> 'nullable|array',
+            'job_responsibility.*.responsiblity' => 'nullable|string|min:5',
 
-            // Validation for job qualifications
-            'job_qualification'=> 'required|array|min:1',
-            'job_qualification.*.qualification' => 'required|string|min:5',
+            // Validation for job qualifications (optional)
+            'job_qualification'=> 'nullable|array',
+            'job_qualification.*.qualification' => 'nullable|string|min:5',
         ];
     }
 
