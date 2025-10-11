@@ -1,0 +1,4 @@
+# Ignore all images but keep the directory
+*
+!.gitignore
+

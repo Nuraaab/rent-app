@@ -11,7 +11,6 @@ use App\Models\Category;
 use App\Http\Requests\RentalRequest;
 use App\Http\Requests\HouseRequest;
 use App\Http\Resources\RentalResource;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 class RentalController extends Controller
 {
     public function getRental(){
@@ -116,8 +115,16 @@ class RentalController extends Controller
         
         $uploadedImages = [];
         if ($request->hasFile('images')) {  // Ensure images exist and are files
-            foreach ($request->file('images') as $image) { 
-                $uploadedFile = Cloudinary::upload($image->getRealPath())->getSecurePath();
+            foreach ($request->file('images') as $image) {
+                // Generate unique filename
+                $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                
+                // Move to public/assets/images directory
+                $image->move(public_path('assets/images'), $filename);
+                
+                // Get full URL
+                $uploadedFile = asset('assets/images/' . $filename);
+                
                 HouseGallary::create([
                     'rental_id' => $rentalId,
                     'gallery_path' => $uploadedFile,
@@ -129,7 +136,15 @@ class RentalController extends Controller
         $uploadedBedGalleries = [];
         if ($request->hasFile('bedimages')) {  // Ensure bedimages exist and are files
             foreach ($request->file('bedimages') as $image) {
-                $uploadedBedImage = Cloudinary::upload($image->getRealPath())->getSecurePath();
+                // Generate unique filename
+                $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                
+                // Move to public/assets/images directory
+                $image->move(public_path('assets/images'), $filename);
+                
+                // Get full URL
+                $uploadedBedImage = asset('assets/images/' . $filename);
+                
                 BedGallery::create([
                     'rental_id' => $rentalId,
                     'gallery_path' => $uploadedBedImage,
@@ -155,12 +170,13 @@ class RentalController extends Controller
                 return response()->json(['message' => 'Gallery not found'], 404);
             }
             if ($gallery->gallery_path) {
-                $urlParts = parse_url($gallery->gallery_path);
-                $pathParts = explode('/', $urlParts['path']);
-                $publicId = pathinfo($pathParts[count($pathParts) - 1], PATHINFO_FILENAME);
-                $response = Cloudinary::destroy($publicId);
-                if ($response['result'] !== 'ok') {
-                    return response()->json(['message' => 'Failed to delete image from Cloudinary', 'error' => $response], 500);
+                // Extract filename from URL
+                $filename = basename($gallery->gallery_path);
+                $filePath = public_path('assets/images/' . $filename);
+                
+                // Delete file if exists
+                if (file_exists($filePath)) {
+                    unlink($filePath);
                 }
             }
             $gallery->delete();
@@ -174,16 +190,13 @@ class RentalController extends Controller
             }
         
             if ($gallery->gallery_path) {
-                // Extract the public ID from the URL
-                $urlParts = parse_url($gallery->gallery_path);
-                $pathParts = explode('/', $urlParts['path']);
-                $publicId = pathinfo($pathParts[count($pathParts) - 1], PATHINFO_FILENAME);
-        
-                // Delete the image from Cloudinary
-                $response = Cloudinary::destroy($publicId);
+                // Extract filename from URL
+                $filename = basename($gallery->gallery_path);
+                $filePath = public_path('assets/images/' . $filename);
                 
-                if ($response['result'] !== 'ok') {
-                    return response()->json(['message' => 'Failed to delete image from Cloudinary', 'error' => $response], 500);
+                // Delete file if exists
+                if (file_exists($filePath)) {
+                    unlink($filePath);
                 }
             }
         
@@ -200,8 +213,16 @@ class RentalController extends Controller
             $rentalId = $gallery->id;
             $uploadedImages = [];
         if ($request->hasFile('images')) {  
-            foreach ($request->file('images') as $image) { 
-                $uploadedFile = Cloudinary::upload($image->getRealPath())->getSecurePath();
+            foreach ($request->file('images') as $image) {
+                // Generate unique filename
+                $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                
+                // Move to public/assets/images directory
+                $image->move(public_path('assets/images'), $filename);
+                
+                // Get full URL
+                $uploadedFile = asset('assets/images/' . $filename);
+                
                 HouseGallary::create([
                     'rental_id' => $rentalId,
                     'gallery_path' => $uploadedFile,
@@ -213,7 +234,15 @@ class RentalController extends Controller
         $uploadedBedGalleries = [];
         if ($request->hasFile('bedimages')) { 
             foreach ($request->file('bedimages') as $image) {
-                $uploadedBedImage = Cloudinary::upload($image->getRealPath())->getSecurePath();
+                // Generate unique filename
+                $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                
+                // Move to public/assets/images directory
+                $image->move(public_path('assets/images'), $filename);
+                
+                // Get full URL
+                $uploadedBedImage = asset('assets/images/' . $filename);
+                
                 BedGallery::create([
                     'rental_id' => $rentalId,
                     'gallery_path' => $uploadedBedImage,
@@ -310,28 +339,26 @@ class RentalController extends Controller
               
                 foreach($house->gallery as $gall){
                     if ($gall->gallery_path) {
-                        $urlParts = parse_url($gall->gallery_path);
-                        $pathParts = explode('/', $urlParts['path']);
-                        $publicId = pathinfo($pathParts[count($pathParts) - 1], PATHINFO_FILENAME);
-                
-                        $response = Cloudinary::destroy($publicId);
+                        // Extract filename from URL
+                        $filename = basename($gall->gallery_path);
+                        $filePath = public_path('assets/images/' . $filename);
                         
-                        if ($response['result'] !== 'ok') {
-                            return response()->json(['message' => 'Failed to delete image from Cloudinary', 'error' => $response], 500);
+                        // Delete file if exists
+                        if (file_exists($filePath)) {
+                            unlink($filePath);
                         }
                     }
                 }
                 $house->gallery()->delete();
                 foreach($house->bedGallery as $bedGall){
                     if ($bedGall->gallery_path) {
-                        $urlParts = parse_url($bedGall->gallery_path);
-                        $pathParts = explode('/', $urlParts['path']);
-                        $publicId = pathinfo($pathParts[count($pathParts) - 1], PATHINFO_FILENAME);
-                
-                        $response = Cloudinary::destroy($publicId);
+                        // Extract filename from URL
+                        $filename = basename($bedGall->gallery_path);
+                        $filePath = public_path('assets/images/' . $filename);
                         
-                        if ($response['result'] !== 'ok') {
-                            return response()->json(['message' => 'Failed to delete image from Cloudinary', 'error' => $response], 500);
+                        // Delete file if exists
+                        if (file_exists($filePath)) {
+                            unlink($filePath);
                         }
                     }
                 }
