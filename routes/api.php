@@ -124,6 +124,12 @@ Route::group(['middleware'=>['auth:sanctum']],function(){
     Route::post('/qualification/update/{id}', [QualificationController::class, 'updateQualification'])->name('updatequalification');
     Route::delete('/qualification/delete/{id}', [QualificationController::class, 'deleteQualification'])->name('deletequalification');
 
+    // Modern favorite endpoints
+    Route::post('/favorites/toggle', [FavoriteController::class, 'toggleFavorite'])->name('toggle_favorite');
+    Route::get('/favorites/ids', [FavoriteController::class, 'getFavoriteIds'])->name('get_favorite_ids');
+    Route::post('/favorites/batch-check', [FavoriteController::class, 'batchCheckStatus'])->name('batch_check_status');
+    
+    // Legacy support endpoints
     Route::post('/favorites/add', [FavoriteController::class, 'addFavorite'])->name('add_favorite');
     Route::post('/favorites/remove', [FavoriteController::class, 'removeFavorite'])->name('remove_favorite');
    
@@ -152,8 +158,11 @@ Route::controller(UserController::class)->group(function () {
 Route::controller(RentalController::class)->group(function () {
     Route::get('/rental', 'getRental')->name('rental');
 });
-Route::get('/favorites', [FavoriteController::class, 'getFavorites'])->name('get_favorite');
-Route::get('/jobfavorites', [FavoriteController::class, 'getJobFavorites'])->name('get_jobfavorite');
+// Public favorite endpoints (with auth check internally)
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/favorites', [FavoriteController::class, 'getFavorites'])->name('get_favorite');
+    Route::get('/jobfavorites', [FavoriteController::class, 'getJobFavorites'])->name('get_jobfavorite');
+});
 
 Route::controller(UploadImageController::class)->group(function () {
     Route::post('upload/single', 'uploadSingleImage')->name('singleimage');
