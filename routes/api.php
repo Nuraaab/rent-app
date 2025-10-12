@@ -189,10 +189,10 @@ Route::controller(CategoryController::class)->group(function () {
     Route::get('/jobcategory', 'getJobCategory')->name('jobcategory');
 });
 
-
-Route::controller(HouseRuleController::class)->group(function () {
-    Route::get('/houserule', 'getHouseRules')->name('houserules');
-});
+// TODO: Create HouseRuleController if needed
+// Route::controller(HouseRuleController::class)->group(function () {
+//     Route::get('/houserule', 'getHouseRules')->name('houserules');
+// });
 
 Route::controller(HouseOfferController::class)->group(function () {
     Route::get('/houseoffer', 'getHouseOffer')->name('houseoffer');

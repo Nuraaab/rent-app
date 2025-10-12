@@ -346,14 +346,15 @@ class UserController extends Controller
             'last_name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:users,email,' . $user->id,
             'phone_number' => 'nullable|unique:users,phone_number,' . $user->id . '|regex:/^\+?[0-9]{10,15}$/',
+            'profile_image_path' => 'nullable|string|max:500',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 400);
         }
 
-        // Update user details
-        $user->update($request->only('first_name', 'last_name', 'email', 'phone_number'));
+        // Update user details including profile image
+        $user->update($request->only('first_name', 'last_name', 'email', 'phone_number', 'profile_image_path'));
 
         return response()->json([
             'message' => 'User updated successfully!',
