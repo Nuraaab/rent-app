@@ -64,7 +64,7 @@ public function uploadImage(Request $request){
         // Return the path relative to public
         $imagePath = '/assets/uploads/' . $fileName;
         
-        return response()->json($imagePath, 200);
+        return response()->json(['url' => $imagePath], 200);
     }
 
     return response()->json(['message' => 'Invalid file upload'], 400);
