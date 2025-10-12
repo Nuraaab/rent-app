@@ -6,8 +6,9 @@ use Illuminate\Http\Request;
 use App\Http\Requests\HouseGalleryRequest;
 use App\Models\HouseGallary;
 use App\Http\Resources\HouseGalleryResource;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+
 class HouseGallaryController extends Controller
 {
   public function getHouseGallery(){
@@ -46,10 +47,24 @@ class HouseGallaryController extends Controller
 public function uploadImage(Request $request){
     if ($request->hasFile('image')) {
         $file = $request->file('image');
-        $uploadResult = Cloudinary::upload($file->getRealPath())->getSecurePath();
-        // $fileName = rand().'.'.$file->getClientOriginalName();
-        // $file->move(public_path('images'), $fileName);
-        return response()->json($uploadResult, 200);
+        
+        // Generate unique filename
+        $extension = $file->getClientOriginalExtension();
+        $fileName = time() . '_' . Str::random(20) . '.' . $extension;
+        
+        // Create directories if they don't exist
+        $uploadPath = public_path('assets/uploads');
+        if (!file_exists($uploadPath)) {
+            mkdir($uploadPath, 0755, true);
+        }
+        
+        // Move file to public/assets/uploads
+        $file->move($uploadPath, $fileName);
+        
+        // Return the path relative to public
+        $imagePath = '/assets/uploads/' . $fileName;
+        
+        return response()->json($imagePath, 200);
     }
 
     return response()->json(['message' => 'Invalid file upload'], 400);
