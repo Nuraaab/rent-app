@@ -319,6 +319,85 @@ class UserController extends Controller
         }
     }
 
+    public function firebaseEmailAuth(Request $request)
+    {
+        $firebase = (new Factory)
+            ->withServiceAccount(config('firebase.credentials'))
+            ->createAuth();
+
+        $validatedData = $request->validate([
+            'id_token' => 'required|string',
+        ]);
+
+        $idToken = $validatedData['id_token'];
+
+        try {
+            $verifiedToken = $firebase->verifyIdToken($idToken);
+            $claims = $verifiedToken->claims()->all();
+
+            $firebaseUid = $claims['sub'] ?? null; 
+            $email = $claims['email'] ?? null;
+            $emailVerified = $claims['email_verified'] ?? false;
+
+            if (!$firebaseUid || !$email) {
+                return response()->json(['message' => 'Firebase UID and email are required.'], 400);
+            }
+
+            // Check if email is verified
+            if (!$emailVerified) {
+                return response()->json([
+                    'message' => 'Please verify your email address before logging in.',
+                    'email_verified' => false,
+                ], 403);
+            }
+
+            // Find or create user
+            $user = User::where('firebase_uid', $firebaseUid)->first();
+            
+            if (!$user) {
+                $user = User::where('email', $email)->first();
+
+                if ($user) {
+                    // Link existing account with Firebase
+                    $user->firebase_uid = $firebaseUid;
+                    $user->save();
+                }
+            }
+
+            if ($user) {
+                $token = $user->createToken('myapptoken')->plainTextToken;
+
+                return response()->json([
+                    'message' => 'User logged in successfully',
+                    'user' => $user,
+                    'token' => $token,
+                    'firebaseUID' => $firebaseUid,
+                ], 200);
+            }
+
+            // Create new user
+            $newUser = User::create([
+                'email' => $email,
+                'firebase_uid' => $firebaseUid,
+            ]);
+
+            $token = $newUser->createToken('myapptoken')->plainTextToken;
+
+            return response()->json([
+                'message' => 'User registered successfully',
+                'user' => $newUser,
+                'token' => $token,
+                'firebaseUID' => $firebaseUid,
+                'expires_in' => Carbon::now()->addDays(180),
+            ], 200);
+
+        } catch (\Kreait\Firebase\Exception\Auth\InvalidIdToken $e) {
+            return response()->json(['message' => 'Invalid Firebase token: ' . $e->getMessage()], 401);
+        } catch (\Exception $e) {
+            Log::error('Firebase Email Auth Error: ' . $e->getMessage());
+            return response()->json(['message' => 'An unexpected error occurred.'], 500);
+        }
+    }
   
     public function logout(Request $request) {
         if (auth()->check()) {

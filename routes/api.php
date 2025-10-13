@@ -151,6 +151,7 @@ Route::controller(UserController::class)->group(function () {
     Route::get('/user/{id}', 'getUser')->name('getuser');
     Route::post('/auth/phone_auth', 'phoneAuth')->name('phone_auth');
     Route::post('/auth/google_auth', 'googleAuth')->name('google_auth');
+    Route::post('/auth/firebase_email_auth', 'firebaseEmailAuth')->name('firebase_email_auth');
     Route::post('/auth/apple_auth', 'appleAuth')->name('apple_auth');
     Route::post('/auth/facebook_auth', 'facebookAuth')->name('facebook_auth');
 });
