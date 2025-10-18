@@ -17,6 +17,7 @@ class Rental extends Model
         'listing_type',
         'max_number_of_gusts',
         'number_of_bedrooms',
+        'number_of_beds',
         'number_of_baths',
         'is_furnished',
         'sqft',

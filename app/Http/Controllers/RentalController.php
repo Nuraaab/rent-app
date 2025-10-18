@@ -55,8 +55,9 @@ class RentalController extends Controller
             'description' => $request->description,
             'property_type' => $request->property_type,
             'listing_type' => $request->listing_type ?? 'rent',
-            'max_number_of_gusts' => $request->max_number_of_gusts,
+            'max_number_of_gusts' => $request->max_number_of_gusts ?? 1,
             'number_of_bedrooms' => $request->number_of_bedrooms,
+            'number_of_beds' => $request->number_of_beds ?? $request->number_of_bedrooms,
             'number_of_baths' => $request->number_of_baths,
             'is_furnished' => $request->is_furnished ?? false,
             'sqft' => $request->sqft,
@@ -276,8 +277,9 @@ class RentalController extends Controller
         $house->category = $request->category;
         $house->property_type = $request->property_type;
         $house->listing_type = $request->listing_type ?? 'rent';
-        $house->max_number_of_gusts = $request->max_number_of_gusts;
+        $house->max_number_of_gusts = $request->max_number_of_gusts ?? 1;
         $house->number_of_bedrooms = $request->number_of_bedrooms;
+        $house->number_of_beds = $request->number_of_beds ?? $request->number_of_bedrooms;
         $house->number_of_baths = $request->number_of_baths;
         $house->is_furnished = $request->is_furnished ?? false;
         $house->sqft = $request->sqft;
