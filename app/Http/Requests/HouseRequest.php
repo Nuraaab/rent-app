@@ -27,7 +27,7 @@ class HouseRequest extends FormRequest
             'description' => 'required|string|max:1000',
             'max_number_of_gusts' => 'required|integer|min:1',
             'number_of_bedrooms' => 'required|integer|min:0',
-            'number_of_baths' => 'required|integer|min:0',
+            'number_of_baths' => 'required|numeric|min:0',
             'phone_number' => 'required|string|regex:/^\+?[0-9]{10,15}$/',
             'address' => 'required|string|max:255',
             'latitude' => 'required|numeric|between:-90,90',

@@ -29,7 +29,7 @@ class RentalRequest extends FormRequest
             'listing_type' => 'nullable|in:rent,sale',
             'max_number_of_gusts' => 'required|integer|min:1',
             'number_of_bedrooms' => 'required|integer|min:0',
-            'number_of_baths' => 'required|integer|min:0',
+            'number_of_baths' => 'required|numeric|min:0',
             'sqft' => 'nullable|numeric|min:0',
             'phone_number' => 'required|string|regex:/^\+?[0-9]{10,15}$/',
             'address' => 'required|string|max:255',
