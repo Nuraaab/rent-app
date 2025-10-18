@@ -18,6 +18,7 @@ class Rental extends Model
         'max_number_of_gusts',
         'number_of_bedrooms',
         'number_of_baths',
+        'is_furnished',
         'sqft',
         'phone_number',
         'address',

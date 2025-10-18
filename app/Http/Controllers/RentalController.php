@@ -58,6 +58,7 @@ class RentalController extends Controller
             'max_number_of_gusts' => $request->max_number_of_gusts,
             'number_of_bedrooms' => $request->number_of_bedrooms,
             'number_of_baths' => $request->number_of_baths,
+            'is_furnished' => $request->is_furnished ?? false,
             'sqft' => $request->sqft,
             'phone_number' => $request->phone_number,
             'address' => $request->address,
@@ -278,6 +279,7 @@ class RentalController extends Controller
         $house->max_number_of_gusts = $request->max_number_of_gusts;
         $house->number_of_bedrooms = $request->number_of_bedrooms;
         $house->number_of_baths = $request->number_of_baths;
+        $house->is_furnished = $request->is_furnished ?? false;
         $house->sqft = $request->sqft;
         $house->phone_number = $request->phone_number;
         $house->address = $request->address;
