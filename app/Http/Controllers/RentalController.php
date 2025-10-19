@@ -421,20 +421,26 @@ class RentalController extends Controller
                 ], 400);
             }
 
-            \Log::info('📧 Sending emails', [
+            \Log::info('📧 Preparing to send emails', [
                 'owner_email' => $rental->user->email,
                 'inquirer_email' => $inquirer->email
             ]);
 
             // Send email to property owner
+            \Log::info('📧 Sending email to OWNER: ' . $rental->user->email);
             Mail::to($rental->user->email)->send(new PropertyInquiry($rental, $inquirer, true));
+            \Log::info('✅ Email to OWNER sent successfully');
 
             // Send confirmation email to inquirer
             if ($inquirer->email) {
+                \Log::info('📧 Sending email to INQUIRER: ' . $inquirer->email);
                 Mail::to($inquirer->email)->send(new PropertyInquiry($rental, $inquirer, false));
+                \Log::info('✅ Email to INQUIRER sent successfully');
+            } else {
+                \Log::warning('⚠️ Inquirer has no email, skipping confirmation');
             }
 
-            \Log::info('✅ Inquiry sent successfully');
+            \Log::info('✅ All inquiry emails sent successfully');
 
             return response()->json([
                 'success' => true,
