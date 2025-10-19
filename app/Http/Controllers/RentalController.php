@@ -11,6 +11,8 @@ use App\Models\Category;
 use App\Http\Requests\RentalRequest;
 use App\Http\Requests\HouseRequest;
 use App\Http\Resources\RentalResource;
+use App\Mail\PropertyInquiry;
+use Illuminate\Support\Facades\Mail;
 class RentalController extends Controller
 {
     public function getRental(){
@@ -385,6 +387,50 @@ class RentalController extends Controller
             return response()->json(['message' => 'Failed to delete house', 'error' => $e->getMessage()], 500);
         }
        
+    }
+
+    public function sendInquiry(Request $request, $id)
+    {
+        try {
+            $rental = Rental::with(['user', 'houseGallery'])->findOrFail($id);
+            $inquirer = $request->user();
+
+            // Validate that user is not inquiring about their own property
+            if ($rental->user_id == $inquirer->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You cannot inquire about your own property'
+                ], 400);
+            }
+
+            // Check if owner has email
+            if (!$rental->user || !$rental->user->email) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Property owner email not available'
+                ], 400);
+            }
+
+            // Send email to property owner
+            Mail::to($rental->user->email)->send(new PropertyInquiry($rental, $inquirer, true));
+
+            // Send confirmation email to inquirer
+            if ($inquirer->email) {
+                Mail::to($inquirer->email)->send(new PropertyInquiry($rental, $inquirer, false));
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Your inquiry has been sent successfully! The property owner will contact you soon.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send inquiry',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
 }

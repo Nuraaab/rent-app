@@ -91,6 +91,7 @@ Route::group(['middleware'=>['auth:sanctum']],function(){
     Route::get('/auth/getuser/{id}', [UserController::class, 'getUser'])->name('getuser');
     Route::post('/rental/add', [RentalController::class, 'addRental'])->name('addRental');
     Route::post('/rental/post', [RentalController::class, 'postRental'])->name('postRental');
+    Route::post('/rental/{id}/inquiry', [RentalController::class, 'sendInquiry'])->name('sendInquiry');
     Route::post('/jobs/add', [JobPositionController::class, 'addJob'])->name('addiobs');
     Route::post('/jobs/addnew', [JobPositionController::class, 'postJob'])->name('postJob');
 
