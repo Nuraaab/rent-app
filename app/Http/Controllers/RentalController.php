@@ -392,11 +392,20 @@ class RentalController extends Controller
     public function sendInquiry(Request $request, $id)
     {
         try {
+            \Log::info('📧 Send Inquiry Started', ['property_id' => $id]);
+            
             $rental = Rental::with(['user', 'houseGallery'])->findOrFail($id);
             $inquirer = $request->user();
 
+            \Log::info('📧 Rental found', [
+                'rental_id' => $rental->id,
+                'rental_user_id' => $rental->user_id,
+                'inquirer_id' => $inquirer->id
+            ]);
+
             // Validate that user is not inquiring about their own property
             if ($rental->user_id == $inquirer->id) {
+                \Log::warning('⚠️ User trying to inquire about own property');
                 return response()->json([
                     'success' => false,
                     'message' => 'You cannot inquire about your own property'
@@ -405,11 +414,17 @@ class RentalController extends Controller
 
             // Check if owner has email
             if (!$rental->user || !$rental->user->email) {
+                \Log::warning('⚠️ Property owner email not available');
                 return response()->json([
                     'success' => false,
                     'message' => 'Property owner email not available'
                 ], 400);
             }
+
+            \Log::info('📧 Sending emails', [
+                'owner_email' => $rental->user->email,
+                'inquirer_email' => $inquirer->email
+            ]);
 
             // Send email to property owner
             Mail::to($rental->user->email)->send(new PropertyInquiry($rental, $inquirer, true));
@@ -419,12 +434,19 @@ class RentalController extends Controller
                 Mail::to($inquirer->email)->send(new PropertyInquiry($rental, $inquirer, false));
             }
 
+            \Log::info('✅ Inquiry sent successfully');
+
             return response()->json([
                 'success' => true,
                 'message' => 'Your inquiry has been sent successfully! The property owner will contact you soon.'
             ], 200);
 
         } catch (\Exception $e) {
+            \Log::error('❌ Send Inquiry Failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to send inquiry',

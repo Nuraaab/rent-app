@@ -48,6 +48,10 @@ class Rental extends Model
       public function gallery(){
         return $this->hasMany(HouseGallary::class);
       }
+      
+      public function houseGallery(){
+        return $this->hasMany(HouseGallary::class);
+      }
       public function bedGallery(){
         return $this->hasMany(BedGallery::class);
       }
