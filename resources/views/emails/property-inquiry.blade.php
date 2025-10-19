@@ -199,11 +199,11 @@
                     @endif
                 </div>
 
-                @if($message)
+                @if($inquiryMessage)
                     <div class="info-box">
                         <div class="info-title">Message from Inquirer</div>
                         <div class="info-text">
-                            "{{ $message }}"
+                            "{{ $inquiryMessage }}"
                         </div>
                     </div>
                 @endif
@@ -226,11 +226,11 @@
                     </div>
                 </div>
 
-                @if($message)
+                @if($inquiryMessage)
                     <div class="message" style="margin: 20px 0;">
                         <strong>Your Message:</strong><br>
                         <div style="background-color: #f9fafb; padding: 16px; border-radius: 8px; margin-top: 10px;">
-                            "{{ $message }}"
+                            "{{ $inquiryMessage }}"
                         </div>
                     </div>
                 @endif

@@ -15,7 +15,7 @@ class PropertyInquiry extends Mailable
     public $rental;
     public $inquirer;
     public $isForOwner;
-    public $message;
+    public $inquiryMessage;
     public $moveInDate;
 
     /**
@@ -28,7 +28,7 @@ class PropertyInquiry extends Mailable
         $this->rental = $rental;
         $this->inquirer = $inquirer;
         $this->isForOwner = $isForOwner;
-        $this->message = $message;
+        $this->inquiryMessage = $message;
         $this->moveInDate = $moveInDate;
     }
 
@@ -49,7 +49,7 @@ class PropertyInquiry extends Mailable
                         'rental' => $this->rental,
                         'inquirer' => $this->inquirer,
                         'isForOwner' => $this->isForOwner,
-                        'message' => $this->message,
+                        'inquiryMessage' => $this->inquiryMessage,
                         'moveInDate' => $this->moveInDate,
                     ]);
     }
