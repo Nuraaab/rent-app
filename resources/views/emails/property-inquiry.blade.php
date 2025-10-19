@@ -192,7 +192,21 @@
                             <strong>Phone:</strong> {{ $inquirer->phone_number }}
                         </div>
                     @endif
+                    @if($moveInDate)
+                        <div class="inquirer-value">
+                            <strong>Preferred Move-in Date:</strong> {{ $moveInDate }}
+                        </div>
+                    @endif
                 </div>
+
+                @if($message)
+                    <div class="info-box">
+                        <div class="info-title">Message from Inquirer</div>
+                        <div class="info-text">
+                            "{{ $message }}"
+                        </div>
+                    </div>
+                @endif
 
                 <div class="message">
                     Here are the details of the property they're interested in:
@@ -211,6 +225,21 @@
                         We've notified the property owner about your inquiry. They will review your request and contact you directly using the contact information you provided. You can expect to hear from them within 24-48 hours.
                     </div>
                 </div>
+
+                @if($message)
+                    <div class="message" style="margin: 20px 0;">
+                        <strong>Your Message:</strong><br>
+                        <div style="background-color: #f9fafb; padding: 16px; border-radius: 8px; margin-top: 10px;">
+                            "{{ $message }}"
+                        </div>
+                    </div>
+                @endif
+
+                @if($moveInDate)
+                    <div class="message" style="margin: 20px 0;">
+                        <strong>Preferred Move-in Date:</strong> {{ $moveInDate }}
+                    </div>
+                @endif
 
                 <div class="message">
                     Here are the details of the property you inquired about:

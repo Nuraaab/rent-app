@@ -15,17 +15,21 @@ class PropertyInquiry extends Mailable
     public $rental;
     public $inquirer;
     public $isForOwner;
+    public $message;
+    public $moveInDate;
 
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct(Rental $rental, User $inquirer, $isForOwner = false)
+    public function __construct(Rental $rental, User $inquirer, $isForOwner = false, $message = null, $moveInDate = null)
     {
         $this->rental = $rental;
         $this->inquirer = $inquirer;
         $this->isForOwner = $isForOwner;
+        $this->message = $message;
+        $this->moveInDate = $moveInDate;
     }
 
     /**
@@ -45,6 +49,8 @@ class PropertyInquiry extends Mailable
                         'rental' => $this->rental,
                         'inquirer' => $this->inquirer,
                         'isForOwner' => $this->isForOwner,
+                        'message' => $this->message,
+                        'moveInDate' => $this->moveInDate,
                     ]);
     }
 }

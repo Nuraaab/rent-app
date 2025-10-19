@@ -397,10 +397,16 @@ class RentalController extends Controller
             $rental = Rental::with(['user', 'houseGallery'])->findOrFail($id);
             $inquirer = $request->user();
 
+            // Get message and move-in date from request
+            $message = $request->input('message', 'I\'m interested in this property.');
+            $moveInDate = $request->input('move_in_date');
+
             \Log::info('📧 Rental found', [
                 'rental_id' => $rental->id,
                 'rental_user_id' => $rental->user_id,
-                'inquirer_id' => $inquirer->id
+                'inquirer_id' => $inquirer->id,
+                'message' => $message,
+                'move_in_date' => $moveInDate
             ]);
 
             // Validate that user is not inquiring about their own property
@@ -428,13 +434,13 @@ class RentalController extends Controller
 
             // Send email to property owner
             \Log::info('📧 Sending email to OWNER: ' . $rental->user->email);
-            Mail::to($rental->user->email)->send(new PropertyInquiry($rental, $inquirer, true));
+            Mail::to($rental->user->email)->send(new PropertyInquiry($rental, $inquirer, true, $message, $moveInDate));
             \Log::info('✅ Email to OWNER sent successfully');
 
             // Send confirmation email to inquirer
             if ($inquirer->email) {
                 \Log::info('📧 Sending email to INQUIRER: ' . $inquirer->email);
-                Mail::to($inquirer->email)->send(new PropertyInquiry($rental, $inquirer, false));
+                Mail::to($inquirer->email)->send(new PropertyInquiry($rental, $inquirer, false, $message, $moveInDate));
                 \Log::info('✅ Email to INQUIRER sent successfully');
             } else {
                 \Log::warning('⚠️ Inquirer has no email, skipping confirmation');
