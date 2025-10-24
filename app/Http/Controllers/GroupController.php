@@ -36,6 +36,14 @@ class GroupController extends Controller
 
         $groups = $query->orderBy('created_at', 'desc')->paginate(20);
 
+        // If user is authenticated, add join status to each group
+        if (Auth::check()) {
+            $userId = Auth::id();
+            foreach ($groups->items() as $group) {
+                $group->is_joined = $group->members()->where('user_id', $userId)->exists();
+            }
+        }
+
         return response()->json([
             'success' => true,
             'data' => $groups->items(),
@@ -54,6 +62,12 @@ class GroupController extends Controller
     public function show(Group $group): JsonResponse
     {
         $group->load(['creator', 'members']);
+        
+        // If user is authenticated, add join status
+        if (Auth::check()) {
+            $userId = Auth::id();
+            $group->is_joined = $group->members()->where('user_id', $userId)->exists();
+        }
         
         return response()->json([
             'success' => true,
