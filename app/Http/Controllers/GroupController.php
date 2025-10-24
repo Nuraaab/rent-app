@@ -99,14 +99,21 @@ class GroupController extends Controller
     public function join(Group $group): JsonResponse
     {
         try {
-            if ($group->hasMember(Auth::id())) {
+            $user = Auth::user();
+            
+            // Check if user is already a member
+            if ($group->members()->where('user_id', $user->id)->exists()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'You are already a member of this group'
                 ], 400);
             }
 
-            $group->addMember(Auth::id());
+            // Add user to group
+            $group->members()->attach($user->id);
+
+            // Update member count
+            $group->increment('member_count');
 
             return response()->json([
                 'success' => true,
@@ -128,14 +135,21 @@ class GroupController extends Controller
     public function leave(Group $group): JsonResponse
     {
         try {
-            if (!$group->hasMember(Auth::id())) {
+            $user = Auth::user();
+            
+            // Check if user is a member
+            if (!$group->members()->where('user_id', $user->id)->exists()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'You are not a member of this group'
                 ], 400);
             }
 
-            $group->removeMember(Auth::id());
+            // Remove user from group
+            $group->members()->detach($user->id);
+
+            // Update member count
+            $group->decrement('member_count');
 
             return response()->json([
                 'success' => true,
@@ -156,15 +170,22 @@ class GroupController extends Controller
      */
     public function joined(): JsonResponse
     {
-        $groups = Group::joinedBy(Auth::id())
-            ->with(['creator', 'members'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+        try {
+            $user = Auth::user();
+            $groups = $user->joinedGroups()->with(['creator', 'members'])->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => $groups
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $groups
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch joined groups',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -172,24 +193,38 @@ class GroupController extends Controller
      */
     public function search(Request $request): JsonResponse
     {
-        $search = $request->get('q');
-        
-        if (empty($search)) {
+        try {
+            $query = Group::with(['creator', 'members']);
+
+            if ($request->has('search')) {
+                $searchTerm = $request->search;
+                $query->where(function ($q) use ($searchTerm) {
+                    $q->where('title', 'like', "%{$searchTerm}%")
+                      ->orWhere('description', 'like', "%{$searchTerm}%")
+                      ->orWhere('category', 'like', "%{$searchTerm}%");
+                });
+            }
+
+            $groups = $query->orderBy('created_at', 'desc')->paginate(20);
+
+            return response()->json([
+                'success' => true,
+                'data' => $groups->items(),
+                'pagination' => [
+                    'current_page' => $groups->currentPage(),
+                    'last_page' => $groups->lastPage(),
+                    'per_page' => $groups->perPage(),
+                    'total' => $groups->total(),
+                ]
+            ]);
+
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Search query is required'
-            ], 400);
+                'message' => 'Failed to search groups',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $groups = Group::search($search)
-            ->with(['creator', 'members'])
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $groups
-        ]);
     }
 
     /**
