@@ -230,6 +230,7 @@ Route::controller(JobPositionController::class)->group(function () {
 
 // Public group routes (no authentication required)
 Route::get('/groups/public', [GroupController::class, 'index']);
+Route::get('/public-groups', [GroupController::class, 'index']);
 
 Route::post('sms/send', [TwilioController::class, 'sendVerificationCode']);
 Route::post('sms/verify', [TwilioController::class, 'verifyCode']);
