@@ -45,6 +45,14 @@ class Group extends Model
     ];
 
     /**
+     * Get the route key for the model.
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'id';
+    }
+
+    /**
      * Get the user who created the group.
      */
     public function creator(): BelongsTo

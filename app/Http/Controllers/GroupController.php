@@ -101,19 +101,33 @@ class GroupController extends Controller
         try {
             $user = Auth::user();
             
+            \Log::info('Join group request', [
+                'group_id' => $group->id,
+                'user_id' => $user ? $user->id : 'null',
+                'user_email' => $user ? $user->email : 'null'
+            ]);
+            
+            if (!$user) {
+                \Log::error('User not authenticated for join group');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated'
+                ], 401);
+            }
+            
             // Check if user is already a member
-            if ($group->members()->where('user_id', $user->id)->exists()) {
+            if ($group->hasMember($user->id)) {
+                \Log::info('User already a member', ['user_id' => $user->id, 'group_id' => $group->id]);
                 return response()->json([
                     'success' => false,
                     'message' => 'You are already a member of this group'
                 ], 400);
             }
 
-            // Add user to group
-            $group->members()->attach($user->id);
-
-            // Update member count
-            $group->increment('member_count');
+            // Add user to group using the model method
+            $group->addMember($user->id);
+            
+            \Log::info('User successfully joined group', ['user_id' => $user->id, 'group_id' => $group->id]);
 
             return response()->json([
                 'success' => true,
@@ -121,6 +135,11 @@ class GroupController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('Error joining group', [
+                'group_id' => $group->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to join group',
@@ -138,18 +157,15 @@ class GroupController extends Controller
             $user = Auth::user();
             
             // Check if user is a member
-            if (!$group->members()->where('user_id', $user->id)->exists()) {
+            if (!$group->hasMember($user->id)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'You are not a member of this group'
                 ], 400);
             }
 
-            // Remove user from group
-            $group->members()->detach($user->id);
-
-            // Update member count
-            $group->decrement('member_count');
+            // Remove user from group using the model method
+            $group->removeMember($user->id);
 
             return response()->json([
                 'success' => true,
