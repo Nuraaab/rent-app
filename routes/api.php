@@ -19,6 +19,8 @@ use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ApplicationsReservationController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\ItemController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -171,6 +173,22 @@ Route::group(['middleware'=>['auth:sanctum']],function(){
     Route::post('/posts/{post}/like', [PostController::class, 'toggleLike']);
     Route::post('/posts/{post}/comments', [PostController::class, 'addComment']);
     Route::get('/posts/{post}/comments', [PostController::class, 'getComments']);
+    
+    // Services routes
+    Route::get('/services', [ServiceController::class, 'index']);
+    Route::post('/services', [ServiceController::class, 'store']);
+    Route::get('/services/my', [ServiceController::class, 'myServices']);
+    Route::get('/services/{service}', [ServiceController::class, 'show']);
+    Route::put('/services/{service}', [ServiceController::class, 'update']);
+    Route::delete('/services/{service}', [ServiceController::class, 'destroy']);
+    
+    // Items routes
+    Route::get('/items', [ItemController::class, 'index']);
+    Route::post('/items', [ItemController::class, 'store']);
+    Route::get('/items/my', [ItemController::class, 'myItems']);
+    Route::get('/items/{item}', [ItemController::class, 'show']);
+    Route::put('/items/{item}', [ItemController::class, 'update']);
+    Route::delete('/items/{item}', [ItemController::class, 'destroy']);
 });
 
 Route::controller(UserController::class)->group(function () {
