@@ -90,7 +90,11 @@ class GroupController extends Controller
             }
 
             $group = Group::create($data);
-            $group->load(['creator']);
+            
+            // Automatically add the creator as a member of the group
+            $group->members()->attach($data['created_by']);
+            
+            $group->load(['creator', 'members']);
 
             return response()->json([
                 'success' => true,
@@ -169,6 +173,14 @@ class GroupController extends Controller
     {
         try {
             $user = Auth::user();
+            
+            // Check if user is the group creator
+            if ($group->created_by === $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You cannot leave your own group'
+                ], 400);
+            }
             
             // Check if user is a member
             if (!$group->hasMember($user->id)) {
