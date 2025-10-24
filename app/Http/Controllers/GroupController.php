@@ -70,12 +70,9 @@ class GroupController extends Controller
             $data = $request->validated();
             $data['created_by'] = Auth::id();
 
-            // Handle banner image upload
-            if ($request->hasFile('group_banner_image')) {
-                $file = $request->file('group_banner_image');
-                $filename = time() . '_' . $file->getClientOriginalName();
-                $path = $file->storeAs('group_banners', $filename, 'public');
-                $data['group_banner_image'] = Storage::url($path);
+            // Handle banner image URL (uploaded via existing upload service)
+            if ($request->has('group_banner_image') && !empty($request->group_banner_image)) {
+                $data['group_banner_image'] = $request->group_banner_image;
             }
 
             $group = Group::create($data);

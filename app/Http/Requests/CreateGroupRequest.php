@@ -36,7 +36,7 @@ class CreateGroupRequest extends FormRequest
             'timezone' => 'required|string|in:Eastern,Central,Mountain,Pacific,UTC',
             'repeat' => 'required|string|in:None,Daily,Weekly,Monthly',
             'admin_approval' => 'required|boolean',
-            'group_banner_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'group_banner_image' => 'nullable|string|url',
         ];
     }
 
