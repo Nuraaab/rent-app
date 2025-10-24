@@ -18,6 +18,7 @@ use App\Http\Controllers\QualificationController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ApplicationsReservationController;
 use App\Http\Controllers\GroupController;
+use App\Http\Controllers\PostController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -160,6 +161,16 @@ Route::group(['middleware'=>['auth:sanctum']],function(){
     
     // Search functionality
     Route::get('/groups/search', [GroupController::class, 'search']);
+    
+    // Posts routes
+    Route::get('/posts', [PostController::class, 'index']);
+    Route::post('/posts', [PostController::class, 'store']);
+    Route::delete('/posts/{post}', [PostController::class, 'destroy']);
+    
+    // Post interactions
+    Route::post('/posts/{post}/like', [PostController::class, 'toggleLike']);
+    Route::post('/posts/{post}/comments', [PostController::class, 'addComment']);
+    Route::get('/posts/{post}/comments', [PostController::class, 'getComments']);
 });
 
 Route::controller(UserController::class)->group(function () {
