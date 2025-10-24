@@ -58,7 +58,7 @@ class PostController extends Controller
         try {
             $request->validate([
                 'content' => 'required|string|max:2000',
-                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+                'image_url' => 'nullable|string|url'
             ]);
 
             $data = [
@@ -66,12 +66,9 @@ class PostController extends Controller
                 'content' => $request->content,
             ];
 
-            // Handle image upload
-            if ($request->hasFile('image')) {
-                $file = $request->file('image');
-                $filename = time() . '_' . $file->getClientOriginalName();
-                $path = $file->storeAs('post_images', $filename, 'public');
-                $data['image_url'] = Storage::url($path);
+            // Handle image URL from the upload service
+            if ($request->has('image_url') && !empty($request->image_url)) {
+                $data['image_url'] = $request->image_url;
             }
 
             $post = Post::create($data);
@@ -84,6 +81,9 @@ class PostController extends Controller
             ], 201);
 
         } catch (\Exception $e) {
+            \Log::error('Post creation error: ' . $e->getMessage());
+            \Log::error('Post creation error trace: ' . $e->getTraceAsString());
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create post',
