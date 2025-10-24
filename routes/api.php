@@ -17,6 +17,7 @@ use App\Http\Controllers\ResponsiblityController;
 use App\Http\Controllers\QualificationController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ApplicationsReservationController;
+use App\Http\Controllers\GroupController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -144,6 +145,21 @@ Route::group(['middleware'=>['auth:sanctum']],function(){
     Route::get('/applications/forme', [ApplicationsReservationController::class, 'appForMe']);
     Route::post('/applications/status/{id}', [ApplicationsReservationController::class, 'updateStatus'])->name('updateStatus');
     Route::delete('/applications/cancel/{id}', [ApplicationsReservationController::class, 'cancelStatus'])->name('cancelStatus');
+    
+    // Group management routes
+    Route::get('/groups', [GroupController::class, 'index']);
+    Route::get('/groups/joined', [GroupController::class, 'joined']);
+    Route::post('/groups', [GroupController::class, 'store']);
+    Route::get('/groups/{group}', [GroupController::class, 'show']);
+    Route::put('/groups/{group}', [GroupController::class, 'update']);
+    Route::delete('/groups/{group}', [GroupController::class, 'destroy']);
+    
+    // Group membership operations
+    Route::post('/groups/{group}/join', [GroupController::class, 'join']);
+    Route::post('/groups/{group}/leave', [GroupController::class, 'leave']);
+    
+    // Search functionality
+    Route::get('/groups/search', [GroupController::class, 'search']);
 });
 
 Route::controller(UserController::class)->group(function () {
@@ -211,5 +227,9 @@ Route::controller(ResponsiblityController::class)->group(function () {
 Route::controller(JobPositionController::class)->group(function () {
     Route::get('/jobs', [JobPositionController::class, 'getJobs'])->name('jobs');
 });
+
+// Public group routes (no authentication required)
+Route::get('/groups/public', [GroupController::class, 'index']);
+
 Route::post('sms/send', [TwilioController::class, 'sendVerificationCode']);
 Route::post('sms/verify', [TwilioController::class, 'verifyCode']);
