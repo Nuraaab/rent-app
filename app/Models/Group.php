@@ -16,32 +16,19 @@ class Group extends Model
         'title',
         'description',
         'category',
-        'meeting_type',
-        'city',
-        'state',
-        'zip_code',
-        'online_meeting_url',
-        'start_date',
-        'start_time',
-        'end_time',
-        'timezone',
-        'repeat',
-        'group_banner_image',
-        'admin_approval',
+        'cover_image',
+        'privacy',
         'created_by',
+        'member_count',
     ];
 
     protected $casts = [
-        'start_date' => 'date',
-        'start_time' => 'datetime:H:i',
-        'end_time' => 'datetime:H:i',
-        'admin_approval' => 'boolean',
+        'privacy' => 'string',
+        'member_count' => 'integer',
     ];
 
     protected $appends = [
-        'member_count',
         'is_joined',
-        'next_meeting',
     ];
 
     /**
@@ -66,16 +53,24 @@ class Group extends Model
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'group_members')
-                    ->withPivot('joined_at')
+                    ->withPivot('joined_at', 'status', 'approved_by')
                     ->withTimestamps();
     }
 
     /**
-     * Get the member count attribute.
+     * Get the subgroups of the group.
      */
-    public function getMemberCountAttribute(): int
+    public function subgroups(): HasMany
     {
-        return $this->members()->count();
+        return $this->hasMany(Subgroup::class);
+    }
+
+    /**
+     * Get the posts of the group.
+     */
+    public function posts(): HasMany
+    {
+        return $this->hasMany(Post::class);
     }
 
     /**
@@ -87,36 +82,10 @@ class Group extends Model
             return false;
         }
         
-        return $this->members()->where('user_id', auth()->id())->exists();
-    }
-
-    /**
-     * Get the next meeting date based on repeat frequency.
-     */
-    public function getNextMeetingAttribute(): ?string
-    {
-        $startDate = $this->start_date;
-        $now = now();
-        
-        if ($startDate->isPast()) {
-            switch ($this->repeat) {
-                case 'Daily':
-                    $nextMeeting = $startDate->addDays(ceil($now->diffInDays($startDate)));
-                    break;
-                case 'Weekly':
-                    $nextMeeting = $startDate->addWeeks(ceil($now->diffInWeeks($startDate)));
-                    break;
-                case 'Monthly':
-                    $nextMeeting = $startDate->addMonths(ceil($now->diffInMonths($startDate)));
-                    break;
-                default:
-                    return null;
-            }
-        } else {
-            $nextMeeting = $startDate;
-        }
-        
-        return $nextMeeting->format('Y-m-d');
+        return $this->members()
+                    ->where('user_id', auth()->id())
+                    ->wherePivot('status', 'active')
+                    ->exists();
     }
 
     /**
@@ -131,11 +100,11 @@ class Group extends Model
     }
 
     /**
-     * Scope to filter by meeting type.
+     * Scope to filter by privacy.
      */
-    public function scopeByMeetingType($query, $meetingType)
+    public function scopeByPrivacy($query, $privacy)
     {
-        return $query->where('meeting_type', $meetingType);
+        return $query->where('privacy', $privacy);
     }
 
     /**

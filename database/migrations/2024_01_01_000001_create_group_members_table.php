@@ -15,12 +15,15 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('group_id');
             $table->unsignedBigInteger('user_id');
+            $table->enum('status', ['active', 'pending'])->default('active');
+            $table->unsignedBigInteger('approved_by')->nullable(); // Admin who approved the request
             $table->timestamp('joined_at')->useCurrent();
             $table->timestamps();
 
             // Foreign key constraints
             $table->foreign('group_id')->references('id')->on('groups')->onDelete('cascade');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('approved_by')->references('id')->on('users')->onDelete('set null');
             
             // Unique constraint to prevent duplicate memberships
             $table->unique(['group_id', 'user_id']);
@@ -28,6 +31,7 @@ return new class extends Migration
             // Indexes for better performance
             $table->index('group_id');
             $table->index('user_id');
+            $table->index('status');
         });
     }
 
