@@ -16,10 +16,19 @@ return new class extends Migration
             $table->string('title');
             $table->text('description');
             $table->string('category');
-            $table->string('cover_image')->nullable();
-            $table->enum('privacy', ['open', 'closed'])->default('open');
+            $table->enum('meeting_type', ['In Person', 'Online']);
+            $table->string('city')->nullable();
+            $table->string('state')->nullable();
+            $table->string('zip_code')->nullable();
+            $table->string('online_meeting_url')->nullable();
+            $table->date('start_date');
+            $table->time('start_time');
+            $table->time('end_time');
+            $table->string('timezone');
+            $table->enum('repeat', ['None', 'Daily', 'Weekly', 'Monthly']);
+            $table->string('group_banner_image')->nullable();
+            $table->boolean('admin_approval')->default(true);
             $table->unsignedBigInteger('created_by');
-            $table->integer('member_count')->default(0);
             $table->timestamps();
 
             // Foreign key constraint
@@ -27,7 +36,7 @@ return new class extends Migration
             
             // Indexes for better performance
             $table->index('category');
-            $table->index('privacy');
+            $table->index('meeting_type');
             $table->index('created_by');
         });
     }
