@@ -16,6 +16,7 @@ class Group extends Model
         'title',
         'description',
         'category',
+        'privacy',
         'meeting_type',
         'city',
         'state',
