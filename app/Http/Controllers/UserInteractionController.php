@@ -231,7 +231,7 @@ class UserInteractionController extends Controller
             $groupId = $request->input('group_id'); // Optional group filter
             
             $query = UserInteraction::where('target_user_id', $userId)
-                ->with(['user:id,first_name,last_name,profile_image_path', 'group:id,title']);
+                ->with(['user:id,first_name,last_name,email,profile_image_path', 'group:id,title']);
             
             if ($groupId) {
                 $query->where('group_id', $groupId);
@@ -259,6 +259,7 @@ class UserInteractionController extends Controller
                         'id' => $interaction->user->id,
                         'first_name' => $interaction->user->first_name,
                         'last_name' => $interaction->user->last_name,
+                        'email' => $interaction->user->email,
                         'profile_image_path' => $interaction->user->profile_image_path,
                     ],
                     'group' => $interaction->group ? [
@@ -282,6 +283,7 @@ class UserInteractionController extends Controller
                                 'id' => $interaction->user->id,
                                 'first_name' => $interaction->user->first_name,
                                 'last_name' => $interaction->user->last_name,
+                                'email' => $interaction->user->email,
                                 'profile_image_path' => $interaction->user->profile_image_path,
                             ],
                             'group' => $interaction->group ? [
