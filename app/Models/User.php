@@ -72,6 +72,22 @@ class User extends Authenticatable
         return $this->hasOne(NudgeUsage::class);
     }
 
+    /**
+     * Get networking profiles created by this user.
+     */
+    public function networkingProfiles()
+    {
+        return $this->hasMany(NetworkingProfile::class);
+    }
+
+    /**
+     * Get networking connections made by this user.
+     */
+    public function networkingConnections()
+    {
+        return $this->hasMany(NetworkingConnection::class);
+    }
+
     public function posts()
     {
         return $this->hasMany(Post::class);

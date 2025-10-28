@@ -23,6 +23,7 @@ use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\UserInteractionController;
+use App\Http\Controllers\NetworkingController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -180,6 +181,14 @@ Route::group(['middleware'=>['auth:sanctum']],function(){
     Route::get('/interactions/sent', [UserInteractionController::class, 'getSentInteractions']);
     Route::get('/interactions/nudge-usage', [UserInteractionController::class, 'getNudgeUsage']);
     
+    // Networking routes
+    Route::get('/networking', [NetworkingController::class, 'index']);
+    Route::post('/networking', [NetworkingController::class, 'store']);
+    Route::get('/networking/{networkingProfile}', [NetworkingController::class, 'show']);
+    Route::put('/networking/{networkingProfile}', [NetworkingController::class, 'update']);
+    Route::delete('/networking/{networkingProfile}', [NetworkingController::class, 'destroy']);
+    Route::post('/networking/{networkingProfile}/connect', [NetworkingController::class, 'connect']);
+    
     // Posts routes
     Route::get('/posts', [PostController::class, 'index']);
     Route::post('/posts', [PostController::class, 'store']);
@@ -272,6 +281,9 @@ Route::controller(JobPositionController::class)->group(function () {
 // Public group routes (no authentication required)
 Route::get('/groups/public', [GroupController::class, 'index']);
 Route::get('/public-groups', [GroupController::class, 'index']);
+
+// Public networking routes (with optional authentication for is_connected status)
+Route::get('/public-networking', [NetworkingController::class, 'index']);
 
 // Public services routes (no authentication required)
 Route::get('/services', [ServiceController::class, 'index']);
