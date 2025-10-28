@@ -177,6 +177,7 @@ Route::group(['middleware'=>['auth:sanctum']],function(){
     // User interaction routes
     Route::post('/interactions', [UserInteractionController::class, 'sendInteraction']);
     Route::get('/interactions/received', [UserInteractionController::class, 'getReceivedInteractions']);
+    Route::get('/interactions/sent', [UserInteractionController::class, 'getSentInteractions']);
     Route::get('/interactions/nudge-usage', [UserInteractionController::class, 'getNudgeUsage']);
     
     // Posts routes

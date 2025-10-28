@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class UserInteractionController extends Controller
 {
@@ -17,7 +18,7 @@ class UserInteractionController extends Controller
      */
     public function sendInteraction(Request $request): JsonResponse
     {
-        $validator = \Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'target_user_id' => 'required|exists:users,id',
             'type' => 'required|string|in:like,nudge,super_like',
         ]);
@@ -208,6 +209,67 @@ class UserInteractionController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Error fetching received interactions', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch interactions',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get interactions sent by the current user for specific target users.
+     */
+    public function getSentInteractions(Request $request): JsonResponse
+    {
+        try {
+            $userId = Auth::id();
+            
+            // Handle comma-separated string or array
+            $targetUserIdsInput = $request->input('target_user_ids', []);
+            
+            if (is_string($targetUserIdsInput)) {
+                $targetUserIds = array_filter(
+                    array_map('intval', explode(',', $targetUserIdsInput))
+                );
+            } else {
+                $targetUserIds = is_array($targetUserIdsInput) 
+                    ? array_filter(array_map('intval', $targetUserIdsInput))
+                    : [];
+            }
+            
+            if (empty($targetUserIds)) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [],
+                ]);
+            }
+
+            $interactions = UserInteraction::where('user_id', $userId)
+                ->whereIn('target_user_id', $targetUserIds)
+                ->get(['target_user_id', 'type']);
+
+            // Group by target_user_id and return as map
+            $result = [];
+            foreach ($interactions as $interaction) {
+                $targetId = (string)$interaction->target_user_id; // Convert to string for JSON keys
+                if (!isset($result[$targetId])) {
+                    $result[$targetId] = [];
+                }
+                $result[$targetId][] = $interaction->type;
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $result,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching sent interactions', [
                 'user_id' => Auth::id(),
                 'error' => $e->getMessage(),
             ]);
