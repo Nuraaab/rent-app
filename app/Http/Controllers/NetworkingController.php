@@ -32,9 +32,9 @@ class NetworkingController extends Controller
 
         $query = NetworkingProfile::with(['user']);
 
-        // Filter by industry
-        if ($request->has('industry') && $request->industry) {
-            $query->where('industry', $request->industry);
+        // Filter by privacy
+        if ($request->has('privacy') && $request->privacy) {
+            $query->where('privacy', $request->privacy);
         }
 
         // Search functionality
@@ -42,8 +42,7 @@ class NetworkingController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%")
-                  ->orWhere('location', 'like', "%{$search}%");
+                  ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
@@ -101,13 +100,9 @@ class NetworkingController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
+            'description' => 'required|string',
             'cover_image' => 'nullable|string',
-            'skills' => 'nullable|array',
-            'industry' => 'nullable|string|max:255',
-            'project_interests' => 'nullable|array',
-            'availability' => 'nullable|string|max:255',
-            'location' => 'nullable|string|max:255',
+            'privacy' => 'nullable|string|in:open,closed',
         ]);
 
         if ($validator->fails()) {
@@ -121,13 +116,10 @@ class NetworkingController extends Controller
         try {
             $data = $validator->validated();
             $data['user_id'] = Auth::id();
-
-            // Handle skills and project_interests as JSON
-            if (isset($data['skills']) && is_array($data['skills'])) {
-                $data['skills'] = json_encode($data['skills']);
-            }
-            if (isset($data['project_interests']) && is_array($data['project_interests'])) {
-                $data['project_interests'] = json_encode($data['project_interests']);
+            
+            // Set default privacy if not provided
+            if (!isset($data['privacy'])) {
+                $data['privacy'] = 'open';
             }
 
             // Handle cover image URL
@@ -174,11 +166,7 @@ class NetworkingController extends Controller
             'title' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
             'cover_image' => 'nullable|string',
-            'skills' => 'nullable|array',
-            'industry' => 'nullable|string|max:255',
-            'project_interests' => 'nullable|array',
-            'availability' => 'nullable|string|max:255',
-            'location' => 'nullable|string|max:255',
+            'privacy' => 'nullable|string|in:open,closed',
         ]);
 
         if ($validator->fails()) {
@@ -191,14 +179,6 @@ class NetworkingController extends Controller
 
         try {
             $data = $validator->validated();
-
-            // Handle skills and project_interests as JSON
-            if (isset($data['skills']) && is_array($data['skills'])) {
-                $data['skills'] = json_encode($data['skills']);
-            }
-            if (isset($data['project_interests']) && is_array($data['project_interests'])) {
-                $data['project_interests'] = json_encode($data['project_interests']);
-            }
 
             $networkingProfile->update($data);
             $networkingProfile->load(['user']);

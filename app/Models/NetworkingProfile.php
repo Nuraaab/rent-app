@@ -14,16 +14,10 @@ class NetworkingProfile extends Model
         'title',
         'description',
         'cover_image',
-        'skills',
-        'industry',
-        'project_interests',
-        'availability',
-        'location',
+        'privacy',
     ];
 
     protected $casts = [
-        'skills' => 'array',
-        'project_interests' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
