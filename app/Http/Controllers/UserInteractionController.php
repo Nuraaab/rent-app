@@ -44,17 +44,56 @@ class UserInteractionController extends Controller
                 ], 400);
             }
 
-            // Check if interaction already exists
+            // Check if interaction already exists (for toggle functionality)
             $existingInteraction = UserInteraction::where('user_id', $currentUserId)
                 ->where('target_user_id', $targetUserId)
                 ->where('type', $type)
                 ->first();
 
+            // If interaction exists, remove it (toggle off)
             if ($existingInteraction) {
+                // For nudges, we need to decrement usage if removing
+                if ($type === 'nudge') {
+                    $nudgeUsage = NudgeUsage::firstOrCreate(
+                        ['user_id' => $currentUserId],
+                        [
+                            'nudges_used' => 0,
+                            'nudges_purchased' => 0,
+                            'last_reset_date' => now()->toDateString(),
+                        ]
+                    );
+                    // Decrement only if nudges_used > 0
+                    if ($nudgeUsage->nudges_used > 0) {
+                        $nudgeUsage->nudges_used--;
+                        $nudgeUsage->save();
+                    }
+                }
+
+                $existingInteraction->delete();
+
+                // Get updated nudge usage if it was a nudge
+                $updatedNudgeUsage = null;
+                if ($type === 'nudge') {
+                    $nudgeUsage->refresh();
+                    $updatedNudgeUsage = [
+                        'available_nudges' => $nudgeUsage->available_nudges,
+                        'nudges_used' => $nudgeUsage->nudges_used,
+                        'nudges_purchased' => $nudgeUsage->nudges_purchased,
+                    ];
+                }
+
                 return response()->json([
-                    'success' => false,
-                    'message' => 'You have already sent this interaction',
-                ], 400);
+                    'success' => true,
+                    'message' => ucfirst($type) . ' removed successfully',
+                    'data' => [
+                        'interaction' => [
+                            'id' => $existingInteraction->id,
+                            'type' => $existingInteraction->type,
+                            'removed' => true,
+                        ],
+                        'nudge_usage' => $updatedNudgeUsage,
+                    ],
+                ], 200);
             }
 
             // For nudges, check if user has available nudges
