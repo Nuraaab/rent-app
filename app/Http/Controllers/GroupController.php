@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class GroupController extends Controller
 {
@@ -17,6 +18,19 @@ class GroupController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        // Manually authenticate user if token is present (for public routes)
+        if ($request->bearerToken()) {
+            try {
+                $token = \Laravel\Sanctum\PersonalAccessToken::findToken($request->bearerToken());
+                if ($token && $token->tokenable) {
+                    Auth::setUser($token->tokenable);
+                }
+            } catch (\Exception $e) {
+                // Token invalid or expired, continue as unauthenticated
+                Log::info('Failed to authenticate token in public groups route: ' . $e->getMessage());
+            }
+        }
+
         $query = Group::with(['creator', 'members']);
 
         // Filter by category
@@ -119,14 +133,14 @@ class GroupController extends Controller
         try {
             $user = Auth::user();
             
-            \Log::info('Join group request', [
+            Log::info('Join group request', [
                 'group_id' => $group->id,
                 'user_id' => $user ? $user->id : 'null',
                 'user_email' => $user ? $user->email : 'null'
             ]);
             
             if (!$user) {
-                \Log::error('User not authenticated for join group');
+                Log::error('User not authenticated for join group');
                 return response()->json([
                     'success' => false,
                     'message' => 'User not authenticated'
@@ -135,7 +149,7 @@ class GroupController extends Controller
             
             // Check if user is already a member
             if ($group->hasMember($user->id)) {
-                \Log::info('User already a member', ['user_id' => $user->id, 'group_id' => $group->id]);
+                Log::info('User already a member', ['user_id' => $user->id, 'group_id' => $group->id]);
                 return response()->json([
                     'success' => false,
                     'message' => 'You are already a member of this group'
@@ -145,7 +159,7 @@ class GroupController extends Controller
             // Add user to group using the model method
             $group->addMember($user->id);
             
-            \Log::info('User successfully joined group', ['user_id' => $user->id, 'group_id' => $group->id]);
+            Log::info('User successfully joined group', ['user_id' => $user->id, 'group_id' => $group->id]);
 
             return response()->json([
                 'success' => true,
@@ -153,7 +167,7 @@ class GroupController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Error joining group', [
+            Log::error('Error joining group', [
                 'group_id' => $group->id,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
