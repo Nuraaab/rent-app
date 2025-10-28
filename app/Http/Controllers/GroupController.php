@@ -98,9 +98,25 @@ class GroupController extends Controller
             $data = $request->validated();
             $data['created_by'] = Auth::id();
 
-            // Handle banner image URL (uploaded via existing upload service)
+            // Handle banner/cover image URL (uploaded via existing upload service)
             if ($request->has('group_banner_image') && !empty($request->group_banner_image)) {
                 $data['group_banner_image'] = $request->group_banner_image;
+            }
+            
+            // Also check for cover_image field (alternative name)
+            if ($request->has('cover_image') && !empty($request->cover_image)) {
+                $data['group_banner_image'] = $request->cover_image;
+            }
+
+            // Set default values for nullable fields if not provided
+            if (!isset($data['privacy'])) {
+                $data['privacy'] = 'open';
+            }
+            if (!isset($data['category'])) {
+                $data['category'] = '';
+            }
+            if (!isset($data['meeting_type'])) {
+                $data['meeting_type'] = 'Online';
             }
 
             $group = Group::create($data);
@@ -227,8 +243,15 @@ class GroupController extends Controller
     public function joined(): JsonResponse
     {
         try {
-            $user = Auth::user();
-            $groups = $user->joinedGroups()->with(['creator', 'members'])->get();
+            $userId = Auth::id();
+            
+            // Get groups where the user is a member
+            $groups = Group::whereHas('members', function ($query) use ($userId) {
+                $query->where('user_id', $userId);
+            })
+            ->with(['creator', 'members'])
+            ->orderBy('created_at', 'desc')
+            ->get();
 
             return response()->json([
                 'success' => true,
@@ -236,6 +259,10 @@ class GroupController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Error fetching joined groups', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage()
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch joined groups',
