@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Models\UserInteraction;
+use App\Models\NudgeUsage;
 
 class User extends Authenticatable
 {
@@ -44,6 +46,30 @@ class User extends Authenticatable
     public function joinedGroups()
     {
         return $this->belongsToMany(Group::class, 'group_members');
+    }
+
+    /**
+     * Get interactions sent by this user.
+     */
+    public function userInteractions()
+    {
+        return $this->hasMany(UserInteraction::class, 'user_id');
+    }
+
+    /**
+     * Get interactions received by this user.
+     */
+    public function receivedInteractions()
+    {
+        return $this->hasMany(UserInteraction::class, 'target_user_id');
+    }
+
+    /**
+     * Get nudge usage record for this user.
+     */
+    public function nudgeUsage()
+    {
+        return $this->hasOne(NudgeUsage::class);
     }
 
     public function posts()

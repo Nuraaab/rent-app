@@ -22,6 +22,7 @@ use App\Http\Controllers\PostController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\UserInteractionController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -172,6 +173,11 @@ Route::group(['middleware'=>['auth:sanctum']],function(){
     Route::get('/chat/conversations/{conversationId}/messages', [ChatController::class, 'getMessages']);
     Route::post('/chat/conversations/{conversationId}/messages', [ChatController::class, 'sendMessage']);
     Route::post('/chat/send-message', [ChatController::class, 'sendMessageToUser']);
+    
+    // User interaction routes
+    Route::post('/interactions', [UserInteractionController::class, 'sendInteraction']);
+    Route::get('/interactions/received', [UserInteractionController::class, 'getReceivedInteractions']);
+    Route::get('/interactions/nudge-usage', [UserInteractionController::class, 'getNudgeUsage']);
     
     // Posts routes
     Route::get('/posts', [PostController::class, 'index']);
