@@ -21,6 +21,7 @@ use App\Http\Controllers\GroupController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\ItemController;
+use App\Http\Controllers\ChatController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -163,6 +164,13 @@ Route::group(['middleware'=>['auth:sanctum']],function(){
     
     // Search functionality
     Route::get('/groups/search', [GroupController::class, 'search']);
+    
+    // Chat routes
+    Route::get('/chat/conversations', [ChatController::class, 'getConversations']);
+    Route::post('/chat/conversations', [ChatController::class, 'getOrCreateConversation']);
+    Route::get('/chat/conversations/{conversationId}/messages', [ChatController::class, 'getMessages']);
+    Route::post('/chat/conversations/{conversationId}/messages', [ChatController::class, 'sendMessage']);
+    Route::post('/chat/send-message', [ChatController::class, 'sendMessageToUser']);
     
     // Posts routes
     Route::get('/posts', [PostController::class, 'index']);

@@ -60,6 +60,41 @@ class User extends Authenticatable
     {
         return $this->hasMany(Item::class);
     }
+
+    /**
+     * Get conversations where this user is user1
+     */
+    public function conversationsAsUser1()
+    {
+        return $this->hasMany(Conversation::class, 'user1_id');
+    }
+
+    /**
+     * Get conversations where this user is user2
+     */
+    public function conversationsAsUser2()
+    {
+        return $this->hasMany(Conversation::class, 'user2_id');
+    }
+
+    /**
+     * Get all conversations for this user
+     */
+    public function conversations()
+    {
+        return Conversation::where('user1_id', $this->id)
+            ->orWhere('user2_id', $this->id)
+            ->orderBy('last_message_at', 'desc');
+    }
+
+    /**
+     * Get messages sent by this user
+     */
+    public function sentMessages()
+    {
+        return $this->hasMany(Message::class, 'sender_id');
+    }
+
     /**
      * The attributes that should be hidden for serialization.
      *
