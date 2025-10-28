@@ -318,6 +318,39 @@ class GroupController extends Controller
     }
 
     /**
+     * Get members of a group.
+     */
+    public function members(Group $group): JsonResponse
+    {
+        try {
+            $members = $group->members()->get();
+            
+            $formattedMembers = $members->map(function ($member) {
+                return [
+                    'id' => $member->id,
+                    'first_name' => $member->first_name,
+                    'last_name' => $member->last_name,
+                    'email' => $member->email,
+                    'profile_image_path' => $member->profile_image_path,
+                    'phone_number' => $member->phone_number,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $formattedMembers
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch members',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Delete a group.
      */
     public function destroy(Group $group): JsonResponse

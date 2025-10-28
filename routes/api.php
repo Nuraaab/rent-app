@@ -161,6 +161,7 @@ Route::group(['middleware'=>['auth:sanctum']],function(){
     // Group membership operations
     Route::post('/groups/{group}/join', [GroupController::class, 'join']);
     Route::post('/groups/{group}/leave', [GroupController::class, 'leave']);
+    Route::get('/groups/{group}/members', [GroupController::class, 'members']);
     
     // Search functionality
     Route::get('/groups/search', [GroupController::class, 'search']);
