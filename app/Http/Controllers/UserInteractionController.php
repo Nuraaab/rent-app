@@ -224,31 +224,74 @@ class UserInteractionController extends Controller
     /**
      * Get interactions received by the current user.
      */
-    public function getReceivedInteractions(): JsonResponse
+    public function getReceivedInteractions(Request $request): JsonResponse
     {
         try {
             $userId = Auth::id();
+            $groupId = $request->input('group_id'); // Optional group filter
             
-            $interactions = UserInteraction::where('target_user_id', $userId)
-                ->with(['user:id,first_name,last_name,profile_image_path'])
-                ->orderBy('created_at', 'desc')
-                ->get();
+            $query = UserInteraction::where('target_user_id', $userId)
+                ->with(['user:id,first_name,last_name,profile_image_path', 'group:id,title']);
+            
+            if ($groupId) {
+                $query->where('group_id', $groupId);
+            }
+            
+            $interactions = $query->orderBy('created_at', 'desc')->get();
+
+            // Group by type and count
+            $counts = [
+                'nudge' => 0,
+                'super_like' => 0,
+            ];
+            
+            $groupedInteractions = [];
+            foreach ($interactions as $interaction) {
+                $counts[$interaction->type] = ($counts[$interaction->type] ?? 0) + 1;
+                
+                if (!isset($groupedInteractions[$interaction->type])) {
+                    $groupedInteractions[$interaction->type] = [];
+                }
+                
+                $groupedInteractions[$interaction->type][] = [
+                    'id' => $interaction->id,
+                    'user' => [
+                        'id' => $interaction->user->id,
+                        'first_name' => $interaction->user->first_name,
+                        'last_name' => $interaction->user->last_name,
+                        'profile_image_path' => $interaction->user->profile_image_path,
+                    ],
+                    'group' => $interaction->group ? [
+                        'id' => $interaction->group->id,
+                        'title' => $interaction->group->title,
+                    ] : null,
+                    'created_at' => $interaction->created_at->toISOString(),
+                ];
+            }
 
             return response()->json([
                 'success' => true,
-                'data' => $interactions->map(function ($interaction) {
-                    return [
-                        'id' => $interaction->id,
-                        'type' => $interaction->type,
-                        'user' => [
-                            'id' => $interaction->user->id,
-                            'first_name' => $interaction->user->first_name,
-                            'last_name' => $interaction->user->last_name,
-                            'profile_image_path' => $interaction->user->profile_image_path,
-                        ],
-                        'created_at' => $interaction->created_at->toISOString(),
-                    ];
-                }),
+                'data' => [
+                    'counts' => $counts,
+                    'interactions' => $groupedInteractions,
+                    'all' => $interactions->map(function ($interaction) {
+                        return [
+                            'id' => $interaction->id,
+                            'type' => $interaction->type,
+                            'user' => [
+                                'id' => $interaction->user->id,
+                                'first_name' => $interaction->user->first_name,
+                                'last_name' => $interaction->user->last_name,
+                                'profile_image_path' => $interaction->user->profile_image_path,
+                            ],
+                            'group' => $interaction->group ? [
+                                'id' => $interaction->group->id,
+                                'title' => $interaction->group->title,
+                            ] : null,
+                            'created_at' => $interaction->created_at->toISOString(),
+                        ];
+                    }),
+                ],
             ]);
 
         } catch (\Exception $e) {
