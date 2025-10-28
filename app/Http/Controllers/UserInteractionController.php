@@ -20,6 +20,7 @@ class UserInteractionController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'target_user_id' => 'required|exists:users,id',
+            'group_id' => 'required|exists:groups,id',
             'type' => 'required|string|in:like,nudge,super_like',
         ]);
 
@@ -44,9 +45,12 @@ class UserInteractionController extends Controller
                 ], 400);
             }
 
+            $groupId = $request->group_id;
+            
             // Check if interaction already exists (for toggle functionality)
             $existingInteraction = UserInteraction::where('user_id', $currentUserId)
                 ->where('target_user_id', $targetUserId)
+                ->where('group_id', $groupId)
                 ->where('type', $type)
                 ->first();
 
@@ -123,6 +127,7 @@ class UserInteractionController extends Controller
             $interaction = UserInteraction::create([
                 'user_id' => $currentUserId,
                 'target_user_id' => $targetUserId,
+                'group_id' => $groupId,
                 'type' => $type,
             ]);
 
@@ -270,6 +275,14 @@ class UserInteractionController extends Controller
             
             // Handle comma-separated string or array
             $targetUserIdsInput = $request->input('target_user_ids', []);
+            $groupId = $request->input('group_id');
+            
+            if (empty($groupId)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Group ID is required',
+                ], 422);
+            }
             
             if (is_string($targetUserIdsInput)) {
                 $targetUserIds = array_filter(
@@ -289,6 +302,7 @@ class UserInteractionController extends Controller
             }
 
             $interactions = UserInteraction::where('user_id', $userId)
+                ->where('group_id', $groupId)
                 ->whereIn('target_user_id', $targetUserIds)
                 ->get(['target_user_id', 'type']);
 

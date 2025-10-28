@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Group;
 
 class UserInteraction extends Model
 {
@@ -12,6 +13,7 @@ class UserInteraction extends Model
     protected $fillable = [
         'user_id',
         'target_user_id',
+        'group_id',
         'type',
     ];
 
@@ -34,5 +36,13 @@ class UserInteraction extends Model
     public function targetUser()
     {
         return $this->belongsTo(User::class, 'target_user_id');
+    }
+
+    /**
+     * Get the group where this interaction occurred.
+     */
+    public function group()
+    {
+        return $this->belongsTo(Group::class);
     }
 }
