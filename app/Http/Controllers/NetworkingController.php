@@ -77,7 +77,7 @@ class NetworkingController extends Controller
     public function show(NetworkingProfile $networkingProfile): JsonResponse
     {
         $networkingProfile->load(['user']);
-        
+
         // If user is authenticated, add connection status
         if (Auth::check()) {
             $userId = Auth::id();
@@ -86,10 +86,28 @@ class NetworkingController extends Controller
                 ->where('status', 'accepted')
                 ->exists();
         }
-        
+
+        // Build a lightweight list of accepted connections with user info
+        $connections = $networkingProfile->acceptedConnections()
+            ->with(['user:id,first_name,last_name,profile_image_path'])
+            ->get()
+            ->map(function ($conn) {
+                return [
+                    'id' => $conn->id,
+                    'user' => [
+                        'id' => $conn->user->id,
+                        'first_name' => $conn->user->first_name,
+                        'last_name' => $conn->user->last_name,
+                        'profile_image_path' => $conn->user->profile_image_path,
+                    ],
+                    'connected_at' => optional($conn->created_at)->toISOString(),
+                ];
+            });
+
         return response()->json([
             'success' => true,
-            'data' => $networkingProfile
+            'data' => $networkingProfile,
+            'connections' => $connections,
         ]);
     }
 
