@@ -11,6 +11,7 @@ use App\Http\Requests\JobPositionRequest;
 use App\Http\Requests\JobRequest;
 use App\Http\Resources\JobPositionResource;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
 
 class JobPositionController extends Controller
@@ -233,11 +234,32 @@ class JobPositionController extends Controller
     public function myJobs(): JsonResponse
     {
         try {
-            $jobs = JobPosition::where('user_id', Auth::id())
+            $userId = Auth::id();
+            \Log::info('🔍 [MyJobs] User ID: ' . $userId);
+            
+            if (!$userId) {
+                \Log::warning('🔴 [MyJobs] User not authenticated');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated',
+                    'data' => []
+                ], 401);
+            }
+            
+            $jobs = JobPosition::where('user_id', $userId)
                 ->latest()
                 ->get();
             
+            \Log::info('🔍 [MyJobs] Found ' . $jobs->count() . ' jobs for user ' . $userId);
+            
+            if ($jobs->count() > 0) {
+                \Log::info('🔍 [MyJobs] First job ID: ' . $jobs->first()->id);
+                \Log::info('🔍 [MyJobs] First job title: ' . $jobs->first()->title);
+            }
+            
             $response = JobPositionResource::collection($jobs);
+            
+            \Log::info('🔍 [MyJobs] Response collection count: ' . count($response));
 
             return response()->json([
                 'success' => true,
@@ -245,6 +267,8 @@ class JobPositionController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('🔴 [MyJobs] Error: ' . $e->getMessage());
+            \Log::error('🔴 [MyJobs] Stack trace: ' . $e->getTraceAsString());
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch your jobs',

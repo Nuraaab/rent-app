@@ -6,6 +6,7 @@ use App\Models\Service;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class ServiceController extends Controller
@@ -206,10 +207,29 @@ class ServiceController extends Controller
     public function myServices(): JsonResponse
     {
         try {
-            $services = Service::where('user_id', Auth::id())
+            $userId = Auth::id();
+            \Log::info('🔍 [MyServices] User ID: ' . $userId);
+            
+            if (!$userId) {
+                \Log::warning('🔴 [MyServices] User not authenticated');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated',
+                    'data' => []
+                ], 401);
+            }
+            
+            $services = Service::where('user_id', $userId)
                 ->with(['user'])
                 ->latest()
                 ->get();
+            
+            \Log::info('🔍 [MyServices] Found ' . $services->count() . ' services for user ' . $userId);
+            
+            if ($services->count() > 0) {
+                \Log::info('🔍 [MyServices] First service ID: ' . $services->first()->id);
+                \Log::info('🔍 [MyServices] First service title: ' . $services->first()->title);
+            }
 
             return response()->json([
                 'success' => true,
@@ -217,6 +237,8 @@ class ServiceController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('🔴 [MyServices] Error: ' . $e->getMessage());
+            \Log::error('🔴 [MyServices] Stack trace: ' . $e->getTraceAsString());
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch your services',

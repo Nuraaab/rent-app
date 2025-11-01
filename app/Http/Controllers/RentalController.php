@@ -14,6 +14,7 @@ use App\Http\Resources\RentalResource;
 use App\Mail\PropertyInquiry;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
 
 class RentalController extends Controller
@@ -476,11 +477,32 @@ class RentalController extends Controller
     public function myProperties(): JsonResponse
     {
         try {
-            $properties = Rental::where('user_id', Auth::id())
+            $userId = Auth::id();
+            \Log::info('🔍 [MyProperties] User ID: ' . $userId);
+            
+            if (!$userId) {
+                \Log::warning('🔴 [MyProperties] User not authenticated');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated',
+                    'data' => []
+                ], 401);
+            }
+            
+            $properties = Rental::where('user_id', $userId)
                 ->latest()
                 ->get();
             
+            \Log::info('🔍 [MyProperties] Found ' . $properties->count() . ' properties for user ' . $userId);
+            
+            if ($properties->count() > 0) {
+                \Log::info('🔍 [MyProperties] First property ID: ' . $properties->first()->id);
+                \Log::info('🔍 [MyProperties] First property title: ' . $properties->first()->title);
+            }
+            
             $response = RentalResource::collection($properties);
+            
+            \Log::info('🔍 [MyProperties] Response collection count: ' . count($response));
 
             return response()->json([
                 'success' => true,
@@ -488,6 +510,8 @@ class RentalController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('🔴 [MyProperties] Error: ' . $e->getMessage());
+            \Log::error('🔴 [MyProperties] Stack trace: ' . $e->getTraceAsString());
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch your properties',

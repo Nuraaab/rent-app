@@ -6,6 +6,7 @@ use App\Models\Item;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class ItemController extends Controller
 {
@@ -213,10 +214,29 @@ class ItemController extends Controller
     public function myItems(): JsonResponse
     {
         try {
-            $items = Item::where('user_id', Auth::id())
+            $userId = Auth::id();
+            \Log::info('🔍 [MyItems] User ID: ' . $userId);
+            
+            if (!$userId) {
+                \Log::warning('🔴 [MyItems] User not authenticated');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated',
+                    'data' => []
+                ], 401);
+            }
+            
+            $items = Item::where('user_id', $userId)
                 ->with(['user'])
                 ->latest()
                 ->get();
+            
+            \Log::info('🔍 [MyItems] Found ' . $items->count() . ' items for user ' . $userId);
+            
+            if ($items->count() > 0) {
+                \Log::info('🔍 [MyItems] First item ID: ' . $items->first()->id);
+                \Log::info('🔍 [MyItems] First item title: ' . $items->first()->title);
+            }
 
             return response()->json([
                 'success' => true,
@@ -224,6 +244,8 @@ class ItemController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('🔴 [MyItems] Error: ' . $e->getMessage());
+            \Log::error('🔴 [MyItems] Stack trace: ' . $e->getTraceAsString());
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch your items',
