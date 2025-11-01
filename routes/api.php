@@ -96,11 +96,17 @@ Route::group(['middleware'=>['auth:sanctum']],function(){
     Route::get('/auth/check-auth', [UserController::class, 'checkAuth'])->name('check-auth');
     Route::post('/auth/logout', [UserController::class, 'logout'])->name('logout');
     Route::get('/auth/getuser/{id}', [UserController::class, 'getUser'])->name('getuser');
+    
+    // Rentals routes (authenticated)
     Route::post('/rental/add', [RentalController::class, 'addRental'])->name('addRental');
     Route::post('/rental/post', [RentalController::class, 'postRental'])->name('postRental');
     Route::post('/rental/{id}/inquiry', [RentalController::class, 'sendInquiry'])->name('sendInquiry');
+    Route::get('/rental/my', [RentalController::class, 'myProperties'])->name('my_properties');
+    
+    // Jobs routes (authenticated)
     Route::post('/jobs/add', [JobPositionController::class, 'addJob'])->name('addiobs');
     Route::post('/jobs/addnew', [JobPositionController::class, 'postJob'])->name('postJob');
+    Route::get('/jobs/my', [JobPositionController::class, 'myJobs'])->name('my_jobs');
 
     Route::post('/rental/gallery/{id}', [RentalController::class, 'updateGallery'])->name('updateGallery');
     Route::delete('/rental/gallery/delete/{id}', [RentalController::class, 'deleteGallery'])->name('deleteGallery');

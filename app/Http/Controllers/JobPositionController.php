@@ -10,6 +10,9 @@ use App\Models\Category;
 use App\Http\Requests\JobPositionRequest;
 use App\Http\Requests\JobRequest;
 use App\Http\Resources\JobPositionResource;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\JsonResponse;
+
 class JobPositionController extends Controller
 {
 
@@ -223,4 +226,31 @@ class JobPositionController extends Controller
             return response()->json(['message' => 'Failed to delete job', 'error' => $e->getMessage()], 500);
         }
         }
+
+    /**
+     * Get user's own jobs.
+     */
+    public function myJobs(): JsonResponse
+    {
+        try {
+            $jobs = JobPosition::where('user_id', Auth::id())
+                ->latest()
+                ->get();
+            
+            $response = JobPositionResource::collection($jobs);
+
+            return response()->json([
+                'success' => true,
+                'data' => $response
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch your jobs',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

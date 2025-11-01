@@ -13,6 +13,9 @@ use App\Http\Requests\HouseRequest;
 use App\Http\Resources\RentalResource;
 use App\Mail\PropertyInquiry;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\JsonResponse;
+
 class RentalController extends Controller
 {
     public function getRental(){
@@ -462,6 +465,32 @@ class RentalController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to send inquiry',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get user's own rentals (properties).
+     */
+    public function myProperties(): JsonResponse
+    {
+        try {
+            $properties = Rental::where('user_id', Auth::id())
+                ->latest()
+                ->get();
+            
+            $response = RentalResource::collection($properties);
+
+            return response()->json([
+                'success' => true,
+                'data' => $response
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch your properties',
                 'error' => $e->getMessage()
             ], 500);
         }
