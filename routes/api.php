@@ -160,6 +160,7 @@ Route::group(['middleware'=>['auth:sanctum']],function(){
     
     // Group management routes
     Route::get('/groups', [GroupController::class, 'index']);
+    Route::get('/public-groups', [GroupController::class, 'index']); // Alias for public access
     Route::get('/groups/joined', [GroupController::class, 'joined']);
     Route::post('/groups', [GroupController::class, 'store']);
     Route::get('/groups/{group}', [GroupController::class, 'show']);
@@ -191,6 +192,7 @@ Route::group(['middleware'=>['auth:sanctum']],function(){
     
     // Networking routes
     Route::get('/networking', [NetworkingController::class, 'index']);
+    Route::get('/public-networking', [NetworkingController::class, 'index']); // Alias for public access
     Route::post('/networking', [NetworkingController::class, 'store']);
     Route::get('/networking/{networkingProfile}', [NetworkingController::class, 'show']);
     Route::put('/networking/{networkingProfile}', [NetworkingController::class, 'update']);

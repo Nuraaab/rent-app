@@ -48,7 +48,7 @@ class NetworkingController extends Controller
 
         $profiles = $query->orderBy('created_at', 'desc')->paginate(20);
 
-        // If user is authenticated, add connection status to each profile
+        // If user is authenticated, add connection status and pending request status to each profile
         if (Auth::check()) {
             $userId = Auth::id();
             foreach ($profiles->items() as $profile) {
@@ -83,7 +83,7 @@ class NetworkingController extends Controller
     {
         $networkingProfile->load(['user']);
 
-        // If user is authenticated, add connection status
+        // If user is authenticated, add connection status and pending request status
         if (Auth::check()) {
             $userId = Auth::id();
             $networkingProfile->is_connected = $networkingProfile->connections()

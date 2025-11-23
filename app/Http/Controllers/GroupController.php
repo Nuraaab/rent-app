@@ -50,17 +50,39 @@ class GroupController extends Controller
 
         $groups = $query->orderBy('created_at', 'desc')->paginate(20);
 
-        // If user is authenticated, add join status to each group
+        // If user is authenticated, add join status and pending request status to each group
+        $groupsData = [];
         if (Auth::check()) {
             $userId = Auth::id();
             foreach ($groups->items() as $group) {
-                $group->is_joined = $group->members()->where('user_id', $userId)->exists();
+                $isJoined = $group->members()
+                    ->where('user_id', $userId)
+                    ->wherePivot('status', 'accepted')
+                    ->exists();
+                $hasPendingRequest = $group->members()
+                    ->where('user_id', $userId)
+                    ->wherePivot('status', 'pending')
+                    ->exists();
+                
+                // Convert group to array and add the dynamic fields
+                $groupData = $group->toArray();
+                $groupData['is_joined'] = $isJoined;
+                $groupData['has_pending_request'] = $hasPendingRequest;
+                $groupsData[] = $groupData;
+            }
+        } else {
+            // If not authenticated, just convert to array
+            foreach ($groups->items() as $group) {
+                $groupData = $group->toArray();
+                $groupData['is_joined'] = false;
+                $groupData['has_pending_request'] = false;
+                $groupsData[] = $groupData;
             }
         }
 
         return response()->json([
             'success' => true,
-            'data' => $groups->items(),
+            'data' => $groupsData,
             'pagination' => [
                 'current_page' => $groups->currentPage(),
                 'last_page' => $groups->lastPage(),
@@ -77,15 +99,28 @@ class GroupController extends Controller
     {
         $group->load(['creator', 'members']);
         
-        // If user is authenticated, add join status
+        // Convert group to array
+        $groupData = $group->toArray();
+        
+        // If user is authenticated, add join status and pending request status
         if (Auth::check()) {
             $userId = Auth::id();
-            $group->is_joined = $group->members()->where('user_id', $userId)->exists();
+            $groupData['is_joined'] = $group->members()
+                ->where('user_id', $userId)
+                ->wherePivot('status', 'accepted')
+                ->exists();
+            $groupData['has_pending_request'] = $group->members()
+                ->where('user_id', $userId)
+                ->wherePivot('status', 'pending')
+                ->exists();
+        } else {
+            $groupData['is_joined'] = false;
+            $groupData['has_pending_request'] = false;
         }
         
         return response()->json([
             'success' => true,
-            'data' => $group
+            'data' => $groupData
         ]);
     }
 
