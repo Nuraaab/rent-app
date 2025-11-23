@@ -55,14 +55,26 @@ class GroupController extends Controller
         if (Auth::check()) {
             $userId = Auth::id();
             foreach ($groups->items() as $group) {
+                // Reload the group with members relationship to ensure pivot data is available
+                $group->load('members');
+                
                 $isJoined = $group->members()
-                    ->where('user_id', $userId)
+                    ->where('users.id', $userId)
                     ->wherePivot('status', 'accepted')
                     ->exists();
+                
                 $hasPendingRequest = $group->members()
-                    ->where('user_id', $userId)
+                    ->where('users.id', $userId)
                     ->wherePivot('status', 'pending')
                     ->exists();
+                
+                // Debug logging
+                Log::info('Group pending request check', [
+                    'group_id' => $group->id,
+                    'user_id' => $userId,
+                    'has_pending_request' => $hasPendingRequest,
+                    'pending_count' => $group->members()->wherePivot('status', 'pending')->count()
+                ]);
                 
                 // Convert group to array and add the dynamic fields
                 $groupData = $group->toArray();
@@ -105,12 +117,15 @@ class GroupController extends Controller
         // If user is authenticated, add join status and pending request status
         if (Auth::check()) {
             $userId = Auth::id();
+            // Reload the group with members relationship to ensure pivot data is available
+            $group->load('members');
+            
             $groupData['is_joined'] = $group->members()
-                ->where('user_id', $userId)
+                ->where('users.id', $userId)
                 ->wherePivot('status', 'accepted')
                 ->exists();
             $groupData['has_pending_request'] = $group->members()
-                ->where('user_id', $userId)
+                ->where('users.id', $userId)
                 ->wherePivot('status', 'pending')
                 ->exists();
         } else {
@@ -481,6 +496,13 @@ class GroupController extends Controller
     {
         try {
             $user = Auth::user();
+            
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated'
+                ], 401);
+            }
             
             // Check if user is the group owner
             if ($group->created_by !== $user->id) {

@@ -83,11 +83,13 @@ class Group extends Model
     }
 
     /**
-     * Get the member count attribute.
+     * Get the member count attribute (only accepted members).
      */
     public function getMemberCountAttribute(): int
     {
-        return $this->members()->count();
+        return $this->members()
+            ->wherePivot('status', 'accepted')
+            ->count();
     }
 
     /**
