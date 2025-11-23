@@ -564,11 +564,32 @@ class GroupController extends Controller
         try {
             $user = Auth::user();
             
-            // Check if user is the group owner
-            if ($group->created_by !== $user->id) {
+            if (!$user) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'You are not authorized to approve requests for this group'
+                    'message' => 'User not authenticated'
+                ], 401);
+            }
+            
+            // Log for debugging
+            Log::info('Approve request authorization check', [
+                'group_id' => $group->id,
+                'group_created_by' => $group->created_by,
+                'user_id' => $user->id,
+                'match' => $group->created_by == $user->id,
+                'type_group' => gettype($group->created_by),
+                'type_user' => gettype($user->id),
+            ]);
+            
+            // Check if user is the group owner
+            if ($group->created_by != $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You are not authorized to approve requests for this group',
+                    'debug' => [
+                        'group_created_by' => $group->created_by,
+                        'user_id' => $user->id,
+                    ]
                 ], 403);
             }
 
