@@ -142,7 +142,7 @@ class GroupController extends Controller
     }
 
     /**
-     * Join a group.
+     * Join a group or request to join (for private groups).
      */
     public function join(Group $group): JsonResponse
     {
@@ -152,7 +152,8 @@ class GroupController extends Controller
             Log::info('Join group request', [
                 'group_id' => $group->id,
                 'user_id' => $user ? $user->id : 'null',
-                'user_email' => $user ? $user->email : 'null'
+                'user_email' => $user ? $user->email : 'null',
+                'privacy' => $group->privacy
             ]);
             
             if (!$user) {
@@ -163,8 +164,9 @@ class GroupController extends Controller
                 ], 401);
             }
             
-            // Check if user is already a member
-            if ($group->hasMember($user->id)) {
+            // Check if user is already a member (accepted)
+            $existingMember = $group->members()->where('user_id', $user->id)->first();
+            if ($existingMember && $existingMember->pivot->status === 'accepted') {
                 Log::info('User already a member', ['user_id' => $user->id, 'group_id' => $group->id]);
                 return response()->json([
                     'success' => false,
@@ -172,15 +174,61 @@ class GroupController extends Controller
                 ], 400);
             }
 
-            // Add user to group using the model method
-            $group->addMember($user->id);
-            
-            Log::info('User successfully joined group', ['user_id' => $user->id, 'group_id' => $group->id]);
+            // Check if there's a pending request
+            if ($existingMember && $existingMember->pivot->status === 'pending') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You already have a pending request for this group'
+                ], 400);
+            }
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Successfully joined the group'
-            ]);
+            // For private groups, create a pending request
+            if ($group->privacy === 'closed') {
+                // Create or update request with pending status
+                if ($existingMember) {
+                    // Update existing rejected request to pending
+                    $group->members()->updateExistingPivot($user->id, [
+                        'status' => 'pending',
+                        'joined_at' => now()
+                    ]);
+                } else {
+                    // Create new pending request
+                    $group->members()->attach($user->id, [
+                        'status' => 'pending',
+                        'joined_at' => now()
+                    ]);
+                }
+                
+                Log::info('Join request created for private group', ['user_id' => $user->id, 'group_id' => $group->id]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Join request sent. Waiting for approval.',
+                    'status' => 'pending'
+                ]);
+            } else {
+                // For open groups, directly add as member
+                if ($existingMember) {
+                    // Update status to accepted if it was rejected
+                    $group->members()->updateExistingPivot($user->id, [
+                        'status' => 'accepted',
+                        'joined_at' => now()
+                    ]);
+                } else {
+                    $group->members()->attach($user->id, [
+                        'status' => 'accepted',
+                        'joined_at' => now()
+                    ]);
+                }
+                
+                Log::info('User successfully joined group', ['user_id' => $user->id, 'group_id' => $group->id]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Successfully joined the group',
+                    'status' => 'accepted'
+                ]);
+            }
 
         } catch (\Exception $e) {
             Log::error('Error joining group', [
@@ -359,12 +407,12 @@ class GroupController extends Controller
     }
 
     /**
-     * Get members of a group.
+     * Get members of a group (only accepted members).
      */
     public function members(Group $group): JsonResponse
     {
         try {
-            $members = $group->members()->get();
+            $members = $group->members()->wherePivot('status', 'accepted')->get();
             
             $formattedMembers = $members->map(function ($member) {
                 return [
@@ -386,6 +434,117 @@ class GroupController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch members',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get pending join requests for a group (owner only).
+     */
+    public function pendingRequests(Group $group): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+            
+            // Check if user is the group owner
+            if ($group->created_by !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You are not authorized to view requests for this group'
+                ], 403);
+            }
+
+            $pendingRequests = $group->members()
+                ->wherePivot('status', 'pending')
+                ->get();
+            
+            $formattedRequests = $pendingRequests->map(function ($member) {
+                return [
+                    'id' => $member->id,
+                    'first_name' => $member->first_name,
+                    'last_name' => $member->last_name,
+                    'email' => $member->email,
+                    'profile_image_path' => $member->profile_image_path,
+                    'phone_number' => $member->phone_number,
+                    'requested_at' => $member->pivot->joined_at,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $formattedRequests
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch pending requests',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Approve or reject a join request (owner only).
+     */
+    public function approveRequest(Group $group, Request $request): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+            
+            // Check if user is the group owner
+            if ($group->created_by !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You are not authorized to approve requests for this group'
+                ], 403);
+            }
+
+            $request->validate([
+                'user_id' => 'required|integer|exists:users,id',
+                'action' => 'required|string|in:approve,reject'
+            ]);
+
+            $requestUserId = $request->user_id;
+            $action = $request->action;
+
+            // Check if request exists
+            $member = $group->members()->where('user_id', $requestUserId)->first();
+            if (!$member || $member->pivot->status !== 'pending') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No pending request found for this user'
+                ], 404);
+            }
+
+            if ($action === 'approve') {
+                // Update status to accepted
+                $group->members()->updateExistingPivot($requestUserId, [
+                    'status' => 'accepted',
+                    'joined_at' => now()
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Join request approved successfully'
+                ]);
+            } else {
+                // Update status to rejected
+                $group->members()->updateExistingPivot($requestUserId, [
+                    'status' => 'rejected'
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Join request rejected'
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to process request',
                 'error' => $e->getMessage()
             ], 500);
         }

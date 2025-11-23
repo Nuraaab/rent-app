@@ -56,6 +56,11 @@ class NetworkingController extends Controller
                     ->where('user_id', $userId)
                     ->where('status', 'accepted')
                     ->exists();
+                // Also add pending status
+                $profile->has_pending_request = $profile->connections()
+                    ->where('user_id', $userId)
+                    ->where('status', 'pending')
+                    ->exists();
             }
         }
 
@@ -84,6 +89,10 @@ class NetworkingController extends Controller
             $networkingProfile->is_connected = $networkingProfile->connections()
                 ->where('user_id', $userId)
                 ->where('status', 'accepted')
+                ->exists();
+            $networkingProfile->has_pending_request = $networkingProfile->connections()
+                ->where('user_id', $userId)
+                ->where('status', 'pending')
                 ->exists();
         }
 
@@ -265,7 +274,7 @@ class NetworkingController extends Controller
     }
 
     /**
-     * Connect to a networking profile.
+     * Connect to a networking profile or request connection (for private profiles).
      */
     public function connect(NetworkingProfile $networkingProfile): JsonResponse
     {
@@ -286,7 +295,7 @@ class NetworkingController extends Controller
                 ->first();
 
             if ($existingConnection) {
-                // If connection exists, toggle it (remove if accepted, add if not)
+                // If connection exists and is accepted, remove it (disconnect)
                 if ($existingConnection->status === 'accepted') {
                     $existingConnection->delete();
                     return response()->json([
@@ -294,34 +303,69 @@ class NetworkingController extends Controller
                         'message' => 'Connection removed successfully',
                         'connected' => false,
                     ]);
-                } else {
-                    // Update status to accepted
-                    $existingConnection->status = 'accepted';
-                    $existingConnection->save();
+                } else if ($existingConnection->status === 'pending') {
+                    // Already has a pending request
                     return response()->json([
-                        'success' => true,
-                        'message' => 'Connected successfully',
-                        'connected' => true,
-                    ]);
+                        'success' => false,
+                        'message' => 'You already have a pending connection request',
+                    ], 400);
+                } else {
+                    // Rejected connection - create new pending request
+                    $existingConnection->status = 'pending';
+                    $existingConnection->save();
+                    
+                    if ($networkingProfile->privacy === 'closed') {
+                        return response()->json([
+                            'success' => true,
+                            'message' => 'Connection request sent. Waiting for approval.',
+                            'connected' => false,
+                            'status' => 'pending',
+                        ]);
+                    } else {
+                        // For open profiles, auto-accept
+                        $existingConnection->status = 'accepted';
+                        $existingConnection->save();
+                        return response()->json([
+                            'success' => true,
+                            'message' => 'Connected successfully',
+                            'connected' => true,
+                        ]);
+                    }
                 }
             }
 
-            // Create new connection (automatically accepted for networking)
-            NetworkingConnection::create([
-                'user_id' => $userId,
-                'networking_profile_id' => $networkingProfile->id,
-                'status' => 'accepted',
-            ]);
+            // For private profiles, create pending request
+            if ($networkingProfile->privacy === 'closed') {
+                NetworkingConnection::create([
+                    'user_id' => $userId,
+                    'networking_profile_id' => $networkingProfile->id,
+                    'status' => 'pending',
+                ]);
 
-            $networkingProfile->refresh();
-            $networkingProfile->load(['user']);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Connection request sent. Waiting for approval.',
+                    'connected' => false,
+                    'status' => 'pending',
+                ]);
+            } else {
+                // For open profiles, create accepted connection
+                NetworkingConnection::create([
+                    'user_id' => $userId,
+                    'networking_profile_id' => $networkingProfile->id,
+                    'status' => 'accepted',
+                ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Connected successfully',
-                'connected' => true,
-                'data' => $networkingProfile,
-            ], 201);
+                $networkingProfile->refresh();
+                $networkingProfile->load(['user']);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Connected successfully',
+                    'connected' => true,
+                    'data' => $networkingProfile,
+                ], 201);
+            }
 
         } catch (\Exception $e) {
             Log::error('Error connecting to networking profile', [
@@ -333,6 +377,120 @@ class NetworkingController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to connect',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get pending connection requests for a networking profile (owner only).
+     */
+    public function pendingRequests(NetworkingProfile $networkingProfile): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+            
+            // Check if user owns the profile
+            if ($networkingProfile->user_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You are not authorized to view requests for this profile'
+                ], 403);
+            }
+
+            $pendingRequests = NetworkingConnection::where('networking_profile_id', $networkingProfile->id)
+                ->where('status', 'pending')
+                ->with('user:id,first_name,last_name,email,profile_image_path,phone_number')
+                ->get();
+            
+            $formattedRequests = $pendingRequests->map(function ($connection) {
+                return [
+                    'id' => $connection->user->id,
+                    'first_name' => $connection->user->first_name,
+                    'last_name' => $connection->user->last_name,
+                    'email' => $connection->user->email,
+                    'profile_image_path' => $connection->user->profile_image_path,
+                    'phone_number' => $connection->user->phone_number,
+                    'requested_at' => $connection->created_at,
+                    'connection_id' => $connection->id,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $formattedRequests
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch pending requests',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Approve or reject a connection request (owner only).
+     */
+    public function approveRequest(NetworkingProfile $networkingProfile, Request $request): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+            
+            // Check if user owns the profile
+            if ($networkingProfile->user_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You are not authorized to approve requests for this profile'
+                ], 403);
+            }
+
+            $request->validate([
+                'connection_id' => 'required|integer|exists:networking_connections,id',
+                'action' => 'required|string|in:approve,reject'
+            ]);
+
+            $connectionId = $request->connection_id;
+            $action = $request->action;
+
+            // Check if connection exists and belongs to this profile
+            $connection = NetworkingConnection::where('id', $connectionId)
+                ->where('networking_profile_id', $networkingProfile->id)
+                ->where('status', 'pending')
+                ->first();
+
+            if (!$connection) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No pending request found'
+                ], 404);
+            }
+
+            if ($action === 'approve') {
+                // Update status to accepted
+                $connection->status = 'accepted';
+                $connection->save();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Connection request approved successfully'
+                ]);
+            } else {
+                // Update status to rejected
+                $connection->status = 'rejected';
+                $connection->save();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Connection request rejected'
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to process request',
                 'error' => $e->getMessage()
             ], 500);
         }

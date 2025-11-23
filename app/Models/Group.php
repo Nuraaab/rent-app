@@ -67,7 +67,18 @@ class Group extends Model
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'group_members')
-                    ->withPivot('joined_at')
+                    ->withPivot('joined_at', 'status')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Get pending join requests for this group.
+     */
+    public function pendingRequests(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'group_members')
+                    ->wherePivot('status', 'pending')
+                    ->withPivot('joined_at', 'status')
                     ->withTimestamps();
     }
 
@@ -80,7 +91,7 @@ class Group extends Model
     }
 
     /**
-     * Get the is_joined attribute.
+     * Get the is_joined attribute (only for accepted members).
      */
     public function getIsJoinedAttribute(): bool
     {
@@ -88,7 +99,10 @@ class Group extends Model
             return false;
         }
         
-        return $this->members()->where('user_id', auth()->id())->exists();
+        return $this->members()
+            ->where('user_id', auth()->id())
+            ->wherePivot('status', 'accepted')
+            ->exists();
     }
 
     /**
@@ -162,11 +176,25 @@ class Group extends Model
     }
 
     /**
-     * Check if a user is a member of this group.
+     * Check if a user is a member of this group (accepted status).
      */
     public function hasMember($userId): bool
     {
-        return $this->members()->where('user_id', $userId)->exists();
+        return $this->members()
+            ->where('user_id', $userId)
+            ->wherePivot('status', 'accepted')
+            ->exists();
+    }
+
+    /**
+     * Check if a user has a pending request.
+     */
+    public function hasPendingRequest($userId): bool
+    {
+        return $this->members()
+            ->where('user_id', $userId)
+            ->wherePivot('status', 'pending')
+            ->exists();
     }
 
     /**
@@ -175,7 +203,10 @@ class Group extends Model
     public function addMember($userId): bool
     {
         if (!$this->hasMember($userId)) {
-            $this->members()->attach($userId, ['joined_at' => now()]);
+            $this->members()->attach($userId, [
+                'status' => 'accepted',
+                'joined_at' => now()
+            ]);
             return true;
         }
         return false;

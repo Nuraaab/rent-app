@@ -170,6 +170,8 @@ Route::group(['middleware'=>['auth:sanctum']],function(){
     Route::post('/groups/{group}/join', [GroupController::class, 'join']);
     Route::post('/groups/{group}/leave', [GroupController::class, 'leave']);
     Route::get('/groups/{group}/members', [GroupController::class, 'members']);
+    Route::get('/groups/{group}/pending-requests', [GroupController::class, 'pendingRequests']);
+    Route::post('/groups/{group}/approve-request', [GroupController::class, 'approveRequest']);
     
     // Search functionality
     Route::get('/groups/search', [GroupController::class, 'search']);
@@ -194,6 +196,8 @@ Route::group(['middleware'=>['auth:sanctum']],function(){
     Route::put('/networking/{networkingProfile}', [NetworkingController::class, 'update']);
     Route::delete('/networking/{networkingProfile}', [NetworkingController::class, 'destroy']);
     Route::post('/networking/{networkingProfile}/connect', [NetworkingController::class, 'connect']);
+    Route::get('/networking/{networkingProfile}/pending-requests', [NetworkingController::class, 'pendingRequests']);
+    Route::post('/networking/{networkingProfile}/approve-request', [NetworkingController::class, 'approveRequest']);
     
     // Posts routes
     Route::get('/posts', [PostController::class, 'index']);
