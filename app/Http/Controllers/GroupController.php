@@ -505,10 +505,24 @@ class GroupController extends Controller
             }
             
             // Check if user is the group owner
-            if ($group->created_by !== $user->id) {
+            // Log for debugging
+            Log::info('Pending requests authorization check', [
+                'group_id' => $group->id,
+                'group_created_by' => $group->created_by,
+                'user_id' => $user->id,
+                'match' => $group->created_by == $user->id,
+                'type_group' => gettype($group->created_by),
+                'type_user' => gettype($user->id),
+            ]);
+            
+            if ($group->created_by != $user->id) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'You are not authorized to view requests for this group'
+                    'message' => 'You are not authorized to view requests for this group',
+                    'debug' => [
+                        'group_created_by' => $group->created_by,
+                        'user_id' => $user->id,
+                    ]
                 ], 403);
             }
 
