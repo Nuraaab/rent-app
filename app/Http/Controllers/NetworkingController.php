@@ -146,6 +146,14 @@ class NetworkingController extends Controller
             }
 
             $profile = NetworkingProfile::create($data);
+            
+            // Automatically connect the creator to their own profile
+            NetworkingConnection::create([
+                'user_id' => Auth::id(),
+                'networking_profile_id' => $profile->id,
+                'status' => 'accepted',
+            ]);
+            
             $profile->load(['user']);
 
             return response()->json([
@@ -264,11 +272,11 @@ class NetworkingController extends Controller
         try {
             $userId = Auth::id();
 
-            // Prevent users from connecting to their own profile
+            // Prevent users from connecting to their own profile (they're already connected automatically on creation)
             if ($networkingProfile->user_id == $userId) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Cannot connect to your own profile',
+                    'message' => 'You are already connected to your own profile',
                 ], 400);
             }
 
