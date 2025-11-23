@@ -18,6 +18,7 @@ class ChatController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'other_user_id' => 'required|exists:users,id',
+            'group_id' => 'nullable|exists:groups,id',
         ]);
 
         if ($validator->fails()) {
@@ -30,6 +31,7 @@ class ChatController extends Controller
 
         $currentUserId = Auth::id();
         $otherUserId = $request->other_user_id;
+        $groupId = $request->group_id;
 
         // Prevent users from creating a conversation with themselves
         if ($currentUserId == $otherUserId) {
@@ -39,8 +41,8 @@ class ChatController extends Controller
             ], 400);
         }
 
-        // Find or create conversation
-        $conversation = Conversation::findOrCreateBetween($currentUserId, $otherUserId);
+        // Find or create conversation (group-specific if group_id is provided)
+        $conversation = Conversation::findOrCreateBetween($currentUserId, $otherUserId, $groupId);
 
         // Load relationships
         $conversation->load(['user1', 'user2', 'latestMessage.sender']);
@@ -251,6 +253,7 @@ class ChatController extends Controller
         $validator = Validator::make($request->all(), [
             'recipient_id' => 'required|exists:users,id',
             'message' => 'required|string|max:5000',
+            'group_id' => 'nullable|exists:groups,id',
         ]);
 
         if ($validator->fails()) {
@@ -272,8 +275,9 @@ class ChatController extends Controller
             ], 400);
         }
 
-        // Find or create conversation
-        $conversation = Conversation::findOrCreateBetween($currentUserId, $recipientId);
+        // Find or create conversation (group-specific if group_id is provided)
+        $groupId = $request->group_id ?? null;
+        $conversation = Conversation::findOrCreateBetween($currentUserId, $recipientId, $groupId);
 
         // Create the message
         $message = Message::create([

@@ -12,6 +12,7 @@ class Conversation extends Model
     protected $fillable = [
         'user1_id',
         'user2_id',
+        'group_id',
         'last_message_at',
     ];
 
@@ -71,21 +72,40 @@ class Conversation extends Model
     }
 
     /**
-     * Find or create a conversation between two users
+     * Get the group this conversation belongs to (if any)
      */
-    public static function findOrCreateBetween($user1Id, $user2Id)
+    public function group()
+    {
+        return $this->belongsTo(Group::class, 'group_id');
+    }
+
+    /**
+     * Find or create a conversation between two users
+     * If group_id is provided, creates a group-specific conversation
+     */
+    public static function findOrCreateBetween($user1Id, $user2Id, $groupId = null)
     {
         // Always order user IDs to ensure consistency
         $orderedIds = [min($user1Id, $user2Id), max($user1Id, $user2Id)];
 
-        $conversation = self::where('user1_id', $orderedIds[0])
-            ->where('user2_id', $orderedIds[1])
-            ->first();
+        $query = self::where('user1_id', $orderedIds[0])
+            ->where('user2_id', $orderedIds[1]);
+
+        // If group_id is provided, make conversation group-specific
+        if ($groupId !== null) {
+            $query->where('group_id', $groupId);
+        } else {
+            // If no group_id, only find conversations without a group
+            $query->whereNull('group_id');
+        }
+
+        $conversation = $query->first();
 
         if (!$conversation) {
             $conversation = self::create([
                 'user1_id' => $orderedIds[0],
                 'user2_id' => $orderedIds[1],
+                'group_id' => $groupId,
             ]);
         }
 
