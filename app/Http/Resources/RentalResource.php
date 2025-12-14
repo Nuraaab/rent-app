@@ -34,6 +34,7 @@ class RentalResource extends JsonResource
             'category' => $this->category,
             'property_type' => $this->property_type,
             'listing_type' => $this->listing_type,
+            'rent_type' => $this->rent_type,
             'max_number_of_gusts' => $this->max_number_of_gusts,
             'number_of_bedrooms' => $this->number_of_bedrooms,
             'number_of_baths' => $this->number_of_baths,

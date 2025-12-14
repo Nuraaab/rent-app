@@ -15,6 +15,7 @@ class Rental extends Model
         'category_id',
         'property_type',
         'listing_type',
+        'rent_type',
         'max_number_of_gusts',
         'number_of_bedrooms',
         'number_of_beds',
