@@ -35,7 +35,7 @@ class JobRequest extends FormRequest
             'contact_name' => 'nullable|string|max:255',
             'contact_email' => 'nullable|email|max:255',
             'contact_phone' => 'nullable|string|max:20',
-            'website' => 'nullable|url|max:255',
+            'website' => 'nullable|string|max:255',
             
             // Role fields
             'employment_type' => 'nullable|string|max:50',

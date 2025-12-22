@@ -100,7 +100,7 @@ class JobPositionController extends Controller
             'contact_name' => $request->contact_name,
             'contact_email' => $request->contact_email,
             'contact_phone' => $request->contact_phone,
-            'website' => $request->website,
+            'website' => $request->website ?? null,
             // Role fields
             'employment_type' => $request->employment_type,
             'seniority' => $request->seniority,

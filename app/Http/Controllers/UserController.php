@@ -432,8 +432,37 @@ class UserController extends Controller
             return response()->json(['errors' => $validator->errors()], 400);
         }
 
-        // Update user details including profile image
-        $user->update($request->only('first_name', 'last_name', 'email', 'phone_number', 'profile_image_path'));
+        // Handle profile image update with history
+        $updateData = $request->only('first_name', 'last_name', 'email', 'phone_number');
+        
+        if ($request->has('profile_image_path') && $request->profile_image_path) {
+            $newImagePath = $request->profile_image_path;
+            $currentImages = $user->profile_image_path ?? ['current' => null, 'previous' => []];
+            
+            // If there's a current image and it's different from the new one, move it to previous
+            if (isset($currentImages['current']) && 
+                $currentImages['current'] !== null && 
+                $currentImages['current'] !== $newImagePath) {
+                
+                // Add current to previous (keep max 5)
+                $previous = $currentImages['previous'] ?? [];
+                array_unshift($previous, $currentImages['current']);
+                $previous = array_slice($previous, 0, 5); // Keep only last 5
+                
+                $updateData['profile_image_path'] = [
+                    'current' => $newImagePath,
+                    'previous' => $previous
+                ];
+            } else {
+                // First time setting image or same image
+                $updateData['profile_image_path'] = [
+                    'current' => $newImagePath,
+                    'previous' => $currentImages['previous'] ?? []
+                ];
+            }
+        }
+
+        $user->update($updateData);
 
         return response()->json([
             'message' => 'User updated successfully!',
