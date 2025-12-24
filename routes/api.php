@@ -92,6 +92,8 @@ Route::group(['middleware'=>['auth:sanctum']],function(){
     // user
     Route::get('/user', [UserController::class, 'getUser']); 
     Route::post('/user/update', [UserController::class, 'updateUser']);
+    Route::get('/user/{userId}/online-status', [UserController::class, 'getOnlineStatus']);
+    Route::post('/user/update-last-seen', [UserController::class, 'updateLastSeen']);
     // user end
     Route::get('/auth/check-auth', [UserController::class, 'checkAuth'])->name('check-auth');
     Route::post('/auth/logout', [UserController::class, 'logout'])->name('logout');

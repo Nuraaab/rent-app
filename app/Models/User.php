@@ -26,7 +26,9 @@ class User extends Authenticatable
         'password',
         'phone_number',
         'profile_image_path',
-        'firebase_uid'
+        'firebase_uid',
+        'is_online',
+        'last_seen'
     ];
     public function job(){
          return $this->hasMany(Job::class);
@@ -155,5 +157,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'profile_image_path' => 'array',
+        'is_online' => 'boolean',
+        'last_seen' => 'datetime',
     ];
 }

@@ -469,5 +469,71 @@ class UserController extends Controller
             'user' => $user
         ]);
     }
+
+    /**
+     * Get user online status
+     * GET /api/user/{userId}/online-status
+     */
+    public function getOnlineStatus($userId)
+    {
+        try {
+            $user = User::find($userId);
+            
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not found'
+                ], 404);
+            }
+
+            // Consider user online if last_seen is within last 5 minutes
+            $isOnline = false;
+            if ($user->last_seen) {
+                $lastSeen = \Carbon\Carbon::parse($user->last_seen);
+                $isOnline = $lastSeen->isAfter(\Carbon\Carbon::now()->subMinutes(5));
+            }
+
+            return response()->json([
+                'success' => true,
+                'is_online' => $isOnline,
+                'last_seen' => $user->last_seen ? $user->last_seen->toIso8601String() : null
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error fetching online status: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch online status'
+            ], 500);
+        }
+    }
+
+    /**
+     * Update user's last seen timestamp
+     * This should be called periodically or on API requests
+     */
+    public function updateLastSeen()
+    {
+        try {
+            $user = auth()->user();
+            
+            if ($user) {
+                $user->update([
+                    'last_seen' => now(),
+                    'is_online' => true
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Last seen updated'
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error updating last seen: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update last seen'
+            ], 500);
+        }
+    }
     
 }

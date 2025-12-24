@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 class ChatController extends Controller
 {
@@ -50,6 +51,9 @@ class ChatController extends Controller
         // Get the other user
         $otherUser = $conversation->getOtherUser($currentUserId);
 
+        // Calculate online status
+        $isOnline = $this->calculateOnlineStatus($otherUser);
+
         return response()->json([
             'success' => true,
             'conversation' => [
@@ -60,6 +64,8 @@ class ChatController extends Controller
                     'last_name' => $otherUser->last_name,
                     'email' => $otherUser->email,
                     'profile_image_path' => $otherUser->profile_image_path,
+                    'is_online' => $isOnline,
+                    'last_seen' => $otherUser->last_seen ? $otherUser->last_seen->toIso8601String() : null,
                 ],
                 'last_message' => $conversation->latestMessage ? [
                     'id' => $conversation->latestMessage->id,
@@ -89,6 +95,7 @@ class ChatController extends Controller
 
         $formattedConversations = $conversations->map(function ($conversation) use ($userId) {
             $otherUser = $conversation->getOtherUser($userId);
+            $isOnline = $this->calculateOnlineStatus($otherUser);
             return [
                 'id' => $conversation->id,
                 'other_user' => [
@@ -97,6 +104,8 @@ class ChatController extends Controller
                     'last_name' => $otherUser->last_name,
                     'email' => $otherUser->email,
                     'profile_image_path' => $otherUser->profile_image_path,
+                    'is_online' => $isOnline,
+                    'last_seen' => $otherUser->last_seen ? $otherUser->last_seen->toIso8601String() : null,
                 ],
                 'last_message' => $conversation->latestMessage ? [
                     'id' => $conversation->latestMessage->id,
@@ -319,7 +328,23 @@ class ChatController extends Controller
                 'last_name' => $otherUser->last_name,
                 'email' => $otherUser->email,
                 'profile_image_path' => $otherUser->profile_image_path,
+                'is_online' => $this->calculateOnlineStatus($otherUser),
+                'last_seen' => $otherUser->last_seen ? $otherUser->last_seen->toIso8601String() : null,
             ],
         ], 201);
+    }
+
+    /**
+     * Calculate if a user is online based on last_seen timestamp
+     * User is considered online if last_seen is within the last 5 minutes
+     */
+    private function calculateOnlineStatus($user): bool
+    {
+        if (!$user->last_seen) {
+            return false;
+        }
+
+        $lastSeen = Carbon::parse($user->last_seen);
+        return $lastSeen->isAfter(Carbon::now()->subMinutes(5));
     }
 }
