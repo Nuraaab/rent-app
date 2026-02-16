@@ -418,12 +418,20 @@ class GroupController extends Controller
     public function update(CreateGroupRequest $request, Group $group): JsonResponse
     {
         try {
-            // Check if user is the creator of the group
-            if ($group->created_by !== Auth::id()) {
+            $authUserId = Auth::id();
+
+            if (!$authUserId) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'You are not authorized to update this group user id: ' . Auth::id() . ' Group Created By: ' . $group->created_by
-                    
+                    'message' => 'User not authenticated'
+                ], 401);
+            }
+
+            // Compare normalized integer IDs to avoid strict type mismatch ("2" !== 2)
+            if ((int) $group->created_by !== (int) $authUserId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You are not authorized to update this group'
                 ], 403);
             }
 
@@ -653,8 +661,17 @@ class GroupController extends Controller
     public function destroy(Group $group): JsonResponse
     {
         try {
-            // Check if user is the creator of the group
-            if ($group->created_by !== Auth::id()) {
+            $authUserId = Auth::id();
+
+            if (!$authUserId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated'
+                ], 401);
+            }
+
+            // Compare normalized integer IDs to avoid strict type mismatch
+            if ((int) $group->created_by !== (int) $authUserId) {
                 return response()->json([
                     'success' => false,
                     'message' => 'You are not authorized to delete this group'
