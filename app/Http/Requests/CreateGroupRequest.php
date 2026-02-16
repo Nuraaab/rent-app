@@ -21,6 +21,10 @@ class CreateGroupRequest extends FormRequest
      */
     public function rules(): array
     {
+        // If route has a group parameter, this request is being used for update.
+        // Existing groups can have historical start dates, so don't force >= today on edit.
+        $isUpdate = $this->route('group') !== null;
+
         return [
             'title' => 'required|string|max:255',
             'description' => 'required|string|max:1000',
@@ -31,7 +35,9 @@ class CreateGroupRequest extends FormRequest
             'state' => 'nullable|string|max:255',
             'zip_code' => 'nullable|string|max:10',
             'online_meeting_url' => 'nullable|url|max:500',
-            'start_date' => 'nullable|date|after_or_equal:today',
+            'start_date' => $isUpdate
+                ? 'nullable|date'
+                : 'nullable|date|after_or_equal:today',
             'start_time' => 'nullable|date_format:H:i',
             'end_time' => 'nullable|date_format:H:i',
             'timezone' => 'nullable|string|max:255',
