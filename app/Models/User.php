@@ -139,6 +139,26 @@ class User extends Authenticatable
         return $this->hasMany(Message::class, 'sender_id');
     }
 
+    public function roommateProfile()
+    {
+        return $this->hasOne(RoommateProfile::class);
+    }
+
+    public function roommatePreference()
+    {
+        return $this->hasOne(RoommatePreference::class);
+    }
+
+    public function roommateInteractionsSent()
+    {
+        return $this->hasMany(RoommateInteraction::class, 'user_id');
+    }
+
+    public function roommateInteractionsReceived()
+    {
+        return $this->hasMany(RoommateInteraction::class, 'target_user_id');
+    }
+
     /**
      * The attributes that should be hidden for serialization.
      *

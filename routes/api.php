@@ -24,6 +24,7 @@ use App\Http\Controllers\ItemController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\UserInteractionController;
 use App\Http\Controllers\NetworkingController;
+use App\Http\Controllers\RoommateController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -167,6 +168,7 @@ Route::group(['middleware'=>['auth:sanctum']],function(){
     Route::post('/groups', [GroupController::class, 'store']);
     Route::get('/groups/{group}', [GroupController::class, 'show']);
     Route::put('/groups/{group}', [GroupController::class, 'update']);
+    Route::post('/groups/{group}/update', [GroupController::class, 'update']); // Mobile-friendly alias
     Route::delete('/groups/{group}', [GroupController::class, 'destroy']);
     
     // Group membership operations
@@ -198,10 +200,18 @@ Route::group(['middleware'=>['auth:sanctum']],function(){
     Route::post('/networking', [NetworkingController::class, 'store']);
     Route::get('/networking/{networkingProfile}', [NetworkingController::class, 'show']);
     Route::put('/networking/{networkingProfile}', [NetworkingController::class, 'update']);
+    Route::post('/networking/{networkingProfile}/update', [NetworkingController::class, 'update']); // Mobile-friendly alias
     Route::delete('/networking/{networkingProfile}', [NetworkingController::class, 'destroy']);
     Route::post('/networking/{networkingProfile}/connect', [NetworkingController::class, 'connect']);
     Route::get('/networking/{networkingProfile}/pending-requests', [NetworkingController::class, 'pendingRequests']);
     Route::post('/networking/{networkingProfile}/approve-request', [NetworkingController::class, 'approveRequest']);
+
+    // Roommate routes
+    Route::get('/roommates', [RoommateController::class, 'index']);
+    Route::get('/roommates/me', [RoommateController::class, 'me']);
+    Route::post('/roommates/profile', [RoommateController::class, 'upsertProfile']);
+    Route::post('/roommates/interactions', [RoommateController::class, 'interact']);
+    Route::get('/roommates/matches', [RoommateController::class, 'matches']);
     
     // Posts routes
     Route::get('/posts', [PostController::class, 'index']);
