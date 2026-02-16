@@ -80,6 +80,7 @@ class GroupController extends Controller
                 $groupData = $group->toArray();
                 $groupData['is_joined'] = $isJoined;
                 $groupData['has_pending_request'] = $hasPendingRequest;
+                $groupData['can_edit'] = ((int) $group->created_by === (int) $userId);
                 $groupsData[] = $groupData;
             }
         } else {
@@ -88,6 +89,7 @@ class GroupController extends Controller
                 $groupData = $group->toArray();
                 $groupData['is_joined'] = false;
                 $groupData['has_pending_request'] = false;
+                $groupData['can_edit'] = false;
                 $groupsData[] = $groupData;
             }
         }
@@ -128,9 +130,11 @@ class GroupController extends Controller
                 ->where('users.id', $userId)
                 ->wherePivot('status', 'pending')
                 ->exists();
+            $groupData['can_edit'] = ((int) $group->created_by === (int) $userId);
         } else {
             $groupData['is_joined'] = false;
             $groupData['has_pending_request'] = false;
+            $groupData['can_edit'] = false;
         }
         
         return response()->json([
