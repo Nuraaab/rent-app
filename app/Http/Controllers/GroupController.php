@@ -422,7 +422,8 @@ class GroupController extends Controller
             if ($group->created_by !== Auth::id()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'You are not authorized to update this group'
+                    'message' => 'You are not authorized to update this group user id: ' . Auth::id() . ' Group Created By: ' . $group->created_by
+                    
                 ], 403);
             }
 
