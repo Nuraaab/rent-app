@@ -81,10 +81,6 @@
                         <p class="mb-0">{{ $user->phone_number ?? 'Not provided' }}</p>
                     </div>
                     <div class="col-md-6">
-                        <label class="text-muted small">Firebase UID</label>
-                        <p class="mb-0"><code>{{ $user->firebase_uid ?? 'N/A' }}</code></p>
-                    </div>
-                    <div class="col-md-6">
                         <label class="text-muted small">Account Status</label>
                         <p class="mb-0">
                             @if($user->email_verified_at)

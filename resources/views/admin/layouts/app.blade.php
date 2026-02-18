@@ -125,6 +125,20 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         
+        .table-responsive {
+            border: 1px solid #EEF2F7;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        .table {
+            margin-bottom: 0;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .table thead th,
         .table th {
             background-color: var(--light-gray);
             font-weight: 600;
@@ -132,6 +146,64 @@
             font-size: 0.75rem;
             letter-spacing: 0.5px;
             color: #6B7280;
+            border-bottom: 1px solid #E5E7EB;
+            padding: 0.9rem 1rem;
+        }
+
+        .table tbody td {
+            padding: 0.95rem 1rem;
+            border-bottom: 1px solid #F1F5F9;
+            vertical-align: middle;
+        }
+
+        .table tbody tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .table.table-hover tbody tr:hover {
+            background: #FFF7F7;
+        }
+
+        .table .btn-group-sm > .btn,
+        .table .btn-sm {
+            border-radius: 8px;
+        }
+
+        .pagination {
+            margin-bottom: 0;
+            gap: 0.25rem;
+        }
+
+        .pagination .page-item .page-link {
+            border: 1px solid #E5E7EB;
+            color: #4B5563;
+            border-radius: 8px;
+            min-width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 0.75rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .pagination .page-item:not(.active):not(.disabled) .page-link:hover {
+            background: #FFF1F2;
+            border-color: #FECACA;
+            color: #BE123C;
+        }
+
+        .pagination .page-item.active .page-link {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(255, 90, 95, 0.28);
+        }
+
+        .pagination .page-item.disabled .page-link {
+            color: #9CA3AF;
+            background: #F9FAFB;
         }
         
         .badge {
