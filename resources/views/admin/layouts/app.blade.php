@@ -36,6 +36,15 @@
             width: 260px;
             z-index: 1000;
             box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+            transition: transform 0.25s ease;
+        }
+
+        .sidebar-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.45);
+            z-index: 999;
         }
         
         .sidebar-brand {
@@ -94,6 +103,30 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+
+        .top-nav-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 0;
+        }
+
+        .sidebar-toggle {
+            display: none;
+            border: 1px solid #E5E7EB;
+            background: #fff;
+            color: #374151;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .content-area {
+            padding: 1.5rem;
         }
         
         .stats-card {
@@ -235,13 +268,71 @@
             padding: 0;
             margin-bottom: 1.5rem;
         }
+
+        @media (max-width: 991.98px) {
+            body.sidebar-open {
+                overflow: hidden;
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .sidebar-backdrop.show {
+                display: block;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .top-nav {
+                padding: 0.85rem 1rem;
+            }
+
+            .top-nav h5 {
+                font-size: 1.05rem;
+                margin-bottom: 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .sidebar-toggle {
+                display: inline-flex;
+            }
+
+            .content-area {
+                padding: 1rem;
+            }
+
+            .table {
+                min-width: 760px;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .content-area {
+                padding: 0.75rem;
+            }
+
+            .top-nav .user-name {
+                display: none;
+            }
+        }
     </style>
     
     @yield('styles')
 </head>
 <body>
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
     <!-- Sidebar -->
-    <div class="sidebar">
+    <div class="sidebar" id="adminSidebar">
         <a href="{{ route('admin.dashboard') }}" class="sidebar-brand">
             Space<span>Gig</span>
         </a>
@@ -298,14 +389,17 @@
     <div class="main-content">
         <!-- Top Navigation -->
         <div class="top-nav">
-            <div>
+            <div class="top-nav-left">
+                <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+                    <i class="bi bi-list fs-5"></i>
+                </button>
                 <h5 class="mb-0">@yield('page-title', 'Dashboard')</h5>
             </div>
             <div class="d-flex align-items-center">
                 <div class="dropdown">
                     <button class="btn btn-link text-decoration-none dropdown-toggle" type="button" data-bs-toggle="dropdown">
                         <i class="bi bi-person-circle fs-4"></i>
-                        <span class="ms-2">{{ Auth::user()->first_name ?? Auth::user()->email }}</span>
+                        <span class="ms-2 user-name">{{ Auth::user()->first_name ?? Auth::user()->email }}</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><a class="dropdown-item" href="{{ route('admin.profile') }}"><i class="bi bi-person me-2"></i>Profile</a></li>
@@ -323,7 +417,7 @@
         </div>
 
         <!-- Content Area -->
-        <div class="p-4">
+        <div class="content-area">
             @if(session('success'))
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
                     <i class="bi bi-check-circle me-2"></i>{{ session('success') }}
@@ -346,6 +440,50 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Chart.js for analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        (() => {
+            const sidebar = document.getElementById('adminSidebar');
+            const toggle = document.getElementById('sidebarToggle');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            if (!sidebar || !toggle || !backdrop) return;
+
+            const closeSidebar = () => {
+                sidebar.classList.remove('open');
+                backdrop.classList.remove('show');
+                document.body.classList.remove('sidebar-open');
+            };
+
+            const openSidebar = () => {
+                sidebar.classList.add('open');
+                backdrop.classList.add('show');
+                document.body.classList.add('sidebar-open');
+            };
+
+            toggle.addEventListener('click', () => {
+                if (sidebar.classList.contains('open')) {
+                    closeSidebar();
+                } else {
+                    openSidebar();
+                }
+            });
+
+            backdrop.addEventListener('click', closeSidebar);
+
+            window.addEventListener('resize', () => {
+                if (window.innerWidth >= 992) {
+                    closeSidebar();
+                }
+            });
+
+            sidebar.querySelectorAll('.nav-link').forEach((link) => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth < 992) {
+                        closeSidebar();
+                    }
+                });
+            });
+        })();
+    </script>
     
     @yield('scripts')
 </body>
