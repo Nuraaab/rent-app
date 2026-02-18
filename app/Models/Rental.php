@@ -8,6 +8,14 @@ use Illuminate\Database\Eloquent\Model;
 class Rental extends Model
 {
     use HasFactory;
+
+    protected $casts = [
+        'price' => 'float',
+        'latitude' => 'float',
+        'longtiude' => 'float',
+        'sqft' => 'float',
+    ];
+
     protected $fillable=[
         'title',
         'category',

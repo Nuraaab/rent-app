@@ -92,7 +92,7 @@
                         </td>
                         <td>{{ $job->company_name ?? $job->client ?? 'N/A' }}</td>
                         <td>
-                            <span class="badge bg-success">${{ number_format($job->job_salary ?? 0) }}</span>
+                            <span class="badge bg-success">${{ number_format((float) str_replace(',', '', (string) ($job->job_salary ?? 0))) }}</span>
                         </td>
                         <td>
                             <span class="badge bg-info text-capitalize">{{ $job->employment_type ?? 'N/A' }}</span>

@@ -163,7 +163,7 @@
                                     <div class="fw-semibold">{{ Str::limit($property->title, 30) }}</div>
                                     <small class="text-muted">{{ $property->address }}</small>
                                 </td>
-                                <td><span class="badge bg-success">${{ number_format($property->price) }}</span></td>
+                                <td><span class="badge bg-success">${{ number_format((float) str_replace(',', '', (string) ($property->price ?? 0))) }}</span></td>
                                 <td><small class="text-muted">{{ $property->created_at->diffForHumans() }}</small></td>
                             </tr>
                             @endforeach

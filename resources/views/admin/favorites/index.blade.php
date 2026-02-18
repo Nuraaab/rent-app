@@ -72,7 +72,7 @@
                         <td>
                             @if($favorite->rental)
                                 <div class="fw-semibold">{{ Str::limit($favorite->rental->title, 40) }}</div>
-                                <small class="text-muted">${{ number_format($favorite->rental->price) }}</small>
+                                <small class="text-muted">${{ number_format((float) str_replace(',', '', (string) ($favorite->rental->price ?? 0))) }}</small>
                             @elseif($favorite->jobPosition)
                                 <div class="fw-semibold">{{ Str::limit($favorite->jobPosition->title, 40) }}</div>
                                 <small class="text-muted">{{ $favorite->jobPosition->company_name }}</small>

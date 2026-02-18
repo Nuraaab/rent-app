@@ -123,7 +123,7 @@
                             @foreach($user->rentals->take(5) as $property)
                             <tr>
                                 <td>{{ Str::limit($property->title, 40) }}</td>
-                                <td>${{ number_format($property->price) }}</td>
+                                <td>${{ number_format((float) str_replace(',', '', (string) ($property->price ?? 0))) }}</td>
                                 <td><span class="badge bg-{{ $property->status == 'active' ? 'success' : 'warning' }}">{{ $property->status }}</span></td>
                                 <td><small class="text-muted">{{ $property->created_at->diffForHumans() }}</small></td>
                             </tr>
@@ -156,7 +156,7 @@
                             @foreach($user->jobPositions->take(5) as $job)
                             <tr>
                                 <td>{{ Str::limit($job->title, 40) }}</td>
-                                <td>${{ number_format($job->job_salary) }}</td>
+                                <td>${{ number_format((float) str_replace(',', '', (string) ($job->job_salary ?? 0))) }}</td>
                                 <td><span class="badge bg-info">{{ $job->employment_type }}</span></td>
                                 <td><small class="text-muted">{{ $job->created_at->diffForHumans() }}</small></td>
                             </tr>

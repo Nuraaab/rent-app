@@ -87,7 +87,7 @@
                             <small class="text-muted">{{ $property->user->email }}</small>
                         </td>
                         <td>
-                            <span class="badge bg-success">${{ number_format($property->price) }}</span>
+                            <span class="badge bg-success">${{ number_format((float) str_replace(',', '', (string) ($property->price ?? 0))) }}</span>
                             <small class="text-muted d-block">{{ $property->listing_type == 'rent' ? '/month' : '' }}</small>
                         </td>
                         <td>

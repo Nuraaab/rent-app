@@ -285,7 +285,7 @@
 
                     @if($rental->price)
                         <div class="price">
-                            ${{ number_format($rental->price) }}
+                            ${{ number_format((float) str_replace(',', '', (string) ($rental->price ?? 0))) }}
                             @if($rental->listing_type && strtolower($rental->listing_type) !== 'sale')
                                 /month
                             @endif

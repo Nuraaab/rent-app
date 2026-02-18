@@ -8,6 +8,15 @@ use Illuminate\Database\Eloquent\Model;
 class JobPosition extends Model
 {
     use HasFactory;
+
+    protected $casts = [
+        'job_salary' => 'float',
+        'min_salary' => 'float',
+        'max_salary' => 'float',
+        'latitude' => 'float',
+        'longitude' => 'float',
+    ];
+
     protected $fillable=[
         'title',
         'category',

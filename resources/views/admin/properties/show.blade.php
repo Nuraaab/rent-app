@@ -16,7 +16,7 @@
                             <i class="bi bi-geo-alt"></i> {{ $property->address }}
                         </p>
                     </div>
-                    <span class="badge bg-success fs-5">${{ number_format($property->price) }}/month</span>
+                    <span class="badge bg-success fs-5">${{ number_format((float) str_replace(',', '', (string) ($property->price ?? 0))) }}/month</span>
                 </div>
 
                 <div class="row g-3 mb-4">
