@@ -128,11 +128,13 @@
         .table-responsive {
             border: 1px solid #EEF2F7;
             border-radius: 12px;
-            overflow: hidden;
+            overflow-x: auto;
+            overflow-y: visible;
             background: #fff;
         }
 
         .table {
+            min-width: 900px;
             margin-bottom: 0;
             border-collapse: separate;
             border-spacing: 0;
