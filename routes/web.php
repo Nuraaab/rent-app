@@ -42,6 +42,7 @@ Route::prefix('admin')->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('admin.dashboard');
         Route::get('/profile', [DashboardController::class, 'profile'])->name('admin.profile');
         Route::get('/settings', [DashboardController::class, 'settings'])->name('admin.settings');
+        Route::put('/settings/password', [DashboardController::class, 'updatePassword'])->name('admin.settings.password');
         Route::post('/logout', [AuthController::class, 'logout'])->name('admin.logout');
 
         // Users Management
