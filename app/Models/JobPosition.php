@@ -68,11 +68,31 @@ class JobPosition extends Model
         return $this->belongsTo(User::class);
       }
 
-      public function responsiblity(){
+    public function responsiblity(){
         return $this->hasMany(Responsiblity::class);
    }
 
+      public function jobResponsibilities()
+      {
+        return $this->responsiblity();
+      }
+
       public function qualification(){
         return $this->hasMany(Qualification::class);
+      }
+
+      public function jobQualifications()
+      {
+        return $this->qualification();
+      }
+
+      public function favorites()
+      {
+        return $this->hasMany(Favorite::class);
+      }
+
+      public function applications()
+      {
+        return $this->hasMany(ApplicationsReservation::class);
       }
 }
