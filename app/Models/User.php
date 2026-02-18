@@ -30,8 +30,14 @@ class User extends Authenticatable
         'is_online',
         'last_seen'
     ];
-    public function job(){
-         return $this->hasMany(Job::class);
+    public function job()
+    {
+        return $this->jobPositions();
+    }
+
+    public function jobPositions()
+    {
+        return $this->hasMany(JobPosition::class);
     }
 
     public function rentals(){
@@ -43,6 +49,11 @@ class User extends Authenticatable
     public function favorites()
     {
         return $this->hasMany(Favorite::class);
+    }
+
+    public function applications()
+    {
+        return $this->hasMany(ApplicationsReservation::class);
     }
 
     public function joinedGroups()

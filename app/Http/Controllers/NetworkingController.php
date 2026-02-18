@@ -61,6 +61,11 @@ class NetworkingController extends Controller
                     ->where('user_id', $userId)
                     ->where('status', 'pending')
                     ->exists();
+                $profile->can_edit = ((int) $profile->user_id === (int) $userId);
+            }
+        } else {
+            foreach ($profiles->items() as $profile) {
+                $profile->can_edit = false;
             }
         }
 
@@ -94,6 +99,9 @@ class NetworkingController extends Controller
                 ->where('user_id', $userId)
                 ->where('status', 'pending')
                 ->exists();
+            $networkingProfile->can_edit = ((int) $networkingProfile->user_id === (int) $userId);
+        } else {
+            $networkingProfile->can_edit = false;
         }
 
         // Build a lightweight list of accepted connections with user info
@@ -164,6 +172,7 @@ class NetworkingController extends Controller
             ]);
             
             $profile->load(['user']);
+            $profile->can_edit = true;
 
             return response()->json([
                 'success' => true,
@@ -190,7 +199,7 @@ class NetworkingController extends Controller
     public function update(Request $request, NetworkingProfile $networkingProfile): JsonResponse
     {
         // Check if user owns the profile
-        if ($networkingProfile->user_id !== Auth::id()) {
+        if ((int) $networkingProfile->user_id !== (int) Auth::id()) {
             return response()->json([
                 'success' => false,
                 'message' => 'You can only update your own networking profile',
@@ -217,6 +226,7 @@ class NetworkingController extends Controller
 
             $networkingProfile->update($data);
             $networkingProfile->load(['user']);
+            $networkingProfile->can_edit = true;
 
             return response()->json([
                 'success' => true,
@@ -244,7 +254,7 @@ class NetworkingController extends Controller
     public function destroy(NetworkingProfile $networkingProfile): JsonResponse
     {
         // Check if user owns the profile
-        if ($networkingProfile->user_id !== Auth::id()) {
+        if ((int) $networkingProfile->user_id !== (int) Auth::id()) {
             return response()->json([
                 'success' => false,
                 'message' => 'You can only delete your own networking profile',
@@ -391,7 +401,7 @@ class NetworkingController extends Controller
             $user = Auth::user();
             
             // Check if user owns the profile
-            if ($networkingProfile->user_id !== $user->id) {
+            if ((int) $networkingProfile->user_id !== (int) $user->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'You are not authorized to view requests for this profile'
@@ -439,7 +449,7 @@ class NetworkingController extends Controller
             $user = Auth::user();
             
             // Check if user owns the profile
-            if ($networkingProfile->user_id !== $user->id) {
+            if ((int) $networkingProfile->user_id !== (int) $user->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'You are not authorized to approve requests for this profile'
