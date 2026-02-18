@@ -3,75 +3,93 @@
 @section('title', 'Dashboard')
 @section('page-title', 'Dashboard Overview')
 
+@section('styles')
+<style>
+    .dashboard-card-link {
+        display: block;
+        color: inherit;
+        text-decoration: none;
+    }
+</style>
+@endsection
+
 @section('content')
 <div class="row g-4 mb-4">
     <!-- Statistics Cards -->
     <div class="col-xl-3 col-md-6">
-        <div class="stats-card">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <p class="text-muted mb-1">Total Users</p>
-                    <h3 class="mb-0 fw-bold">{{ number_format($stats['total_users']) }}</h3>
-                    <small class="text-success">
-                        <i class="bi bi-arrow-up"></i> {{ $stats['active_users'] }} active
-                    </small>
-                </div>
-                <div class="stats-icon" style="background-color: rgba(79, 70, 229, 0.1); color: #4F46E5;">
-                    <i class="bi bi-people"></i>
+        <a href="{{ route('admin.users.index') }}" class="dashboard-card-link">
+            <div class="stats-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-muted mb-1">Total Users</p>
+                        <h3 class="mb-0 fw-bold">{{ number_format($stats['total_users']) }}</h3>
+                        <small class="text-success">
+                            <i class="bi bi-arrow-up"></i> {{ $stats['active_users'] }} active
+                        </small>
+                    </div>
+                    <div class="stats-icon" style="background-color: rgba(79, 70, 229, 0.1); color: #4F46E5;">
+                        <i class="bi bi-people"></i>
+                    </div>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
 
     <div class="col-xl-3 col-md-6">
-        <div class="stats-card">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <p class="text-muted mb-1">Total Properties</p>
-                    <h3 class="mb-0 fw-bold">{{ number_format($stats['total_properties']) }}</h3>
-                    <small class="text-success">
-                        <i class="bi bi-plus-circle"></i> {{ $stats['new_properties'] }} new this week
-                    </small>
-                </div>
-                <div class="stats-icon" style="background-color: rgba(255, 90, 95, 0.1); color: #FF5A5F;">
-                    <i class="bi bi-house-door"></i>
+        <a href="{{ route('admin.properties.index') }}" class="dashboard-card-link">
+            <div class="stats-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-muted mb-1">Total Properties</p>
+                        <h3 class="mb-0 fw-bold">{{ number_format($stats['total_properties']) }}</h3>
+                        <small class="text-success">
+                            <i class="bi bi-plus-circle"></i> {{ $stats['new_properties'] }} new this week
+                        </small>
+                    </div>
+                    <div class="stats-icon" style="background-color: rgba(255, 90, 95, 0.1); color: #FF5A5F;">
+                        <i class="bi bi-house-door"></i>
+                    </div>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
 
     <div class="col-xl-3 col-md-6">
-        <div class="stats-card">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <p class="text-muted mb-1">Job Openings</p>
-                    <h3 class="mb-0 fw-bold">{{ number_format($stats['total_jobs']) }}</h3>
-                    <small class="text-info">
-                        <i class="bi bi-briefcase"></i> Active listings
-                    </small>
-                </div>
-                <div class="stats-icon" style="background-color: rgba(16, 185, 129, 0.1); color: #10B981;">
-                    <i class="bi bi-briefcase"></i>
+        <a href="{{ route('admin.jobs.index') }}" class="dashboard-card-link">
+            <div class="stats-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-muted mb-1">Job Openings</p>
+                        <h3 class="mb-0 fw-bold">{{ number_format($stats['total_jobs']) }}</h3>
+                        <small class="text-info">
+                            <i class="bi bi-briefcase"></i> Active listings
+                        </small>
+                    </div>
+                    <div class="stats-icon" style="background-color: rgba(16, 185, 129, 0.1); color: #10B981;">
+                        <i class="bi bi-briefcase"></i>
+                    </div>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
 
     <div class="col-xl-3 col-md-6">
-        <div class="stats-card">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <p class="text-muted mb-1">Applications</p>
-                    <h3 class="mb-0 fw-bold">{{ number_format($stats['total_applications']) }}</h3>
-                    <small class="text-primary">
-                        <i class="bi bi-file-text"></i> Total received
-                    </small>
-                </div>
-                <div class="stats-icon" style="background-color: rgba(59, 130, 246, 0.1); color: #3B82F6;">
-                    <i class="bi bi-file-earmark-text"></i>
+        <a href="{{ route('admin.applications.index') }}" class="dashboard-card-link">
+            <div class="stats-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-muted mb-1">Applications</p>
+                        <h3 class="mb-0 fw-bold">{{ number_format($stats['total_applications']) }}</h3>
+                        <small class="text-primary">
+                            <i class="bi bi-file-text"></i> Total received
+                        </small>
+                    </div>
+                    <div class="stats-icon" style="background-color: rgba(59, 130, 246, 0.1); color: #3B82F6;">
+                        <i class="bi bi-file-earmark-text"></i>
+                    </div>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
 </div>
 
