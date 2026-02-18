@@ -64,13 +64,35 @@ class Rental extends Model
       public function bedGallery(){
         return $this->hasMany(BedGallery::class);
       }
-      public function review(){
-        return $this->hasMany(Review::class);
+    public function review(){
+    return $this->hasMany(Review::class);
       }
+
+      public function reviews()
+      {
+        return $this->review();
+      }
+
       public function house_rule(){
         return $this->hasMany(HouseRule::class);
       }
+
+      public function houseRules()
+      {
+        return $this->house_rule();
+      }
+
       public function house_offer(){
         return $this->hasMany(HouseOffer::class);
+      }
+
+      public function houseOffers()
+      {
+        return $this->house_offer();
+      }
+
+      public function favorites()
+      {
+        return $this->hasMany(Favorite::class);
       }
 }
