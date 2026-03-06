@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('roommate_profiles')) {
+            return;
+        }
+
         Schema::create('roommate_profiles', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->unique()->constrained()->onDelete('cascade');
@@ -50,4 +54,3 @@ return new class extends Migration
         Schema::dropIfExists('roommate_profiles');
     }
 };
-

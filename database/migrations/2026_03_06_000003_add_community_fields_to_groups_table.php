@@ -11,15 +11,35 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('groups')) {
+            return;
+        }
+
         Schema::table('groups', function (Blueprint $table) {
-            $table->string('height', 20)->nullable()->after('admin_approval');
-            $table->string('pets', 20)->nullable()->after('height');
-            $table->string('children', 40)->nullable()->after('pets');
-            $table->string('politics', 20)->nullable()->after('children');
-            $table->string('faith_identity', 60)->nullable()->after('politics');
-            $table->string('education', 40)->nullable()->after('faith_identity');
-            $table->string('body_type', 20)->nullable()->after('education');
-            $table->string('exercise', 20)->nullable()->after('body_type');
+            if (!Schema::hasColumn('groups', 'height')) {
+                $table->string('height', 20)->nullable()->after('admin_approval');
+            }
+            if (!Schema::hasColumn('groups', 'pets')) {
+                $table->string('pets', 20)->nullable()->after('height');
+            }
+            if (!Schema::hasColumn('groups', 'children')) {
+                $table->string('children', 40)->nullable()->after('pets');
+            }
+            if (!Schema::hasColumn('groups', 'politics')) {
+                $table->string('politics', 20)->nullable()->after('children');
+            }
+            if (!Schema::hasColumn('groups', 'faith_identity')) {
+                $table->string('faith_identity', 60)->nullable()->after('politics');
+            }
+            if (!Schema::hasColumn('groups', 'education')) {
+                $table->string('education', 40)->nullable()->after('faith_identity');
+            }
+            if (!Schema::hasColumn('groups', 'body_type')) {
+                $table->string('body_type', 20)->nullable()->after('education');
+            }
+            if (!Schema::hasColumn('groups', 'exercise')) {
+                $table->string('exercise', 20)->nullable()->after('body_type');
+            }
         });
     }
 
@@ -28,8 +48,13 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('groups')) {
+            return;
+        }
+
         Schema::table('groups', function (Blueprint $table) {
-            $table->dropColumn([
+            $columnsToDrop = [];
+            foreach ([
                 'height',
                 'pets',
                 'children',
@@ -38,8 +63,15 @@ return new class extends Migration
                 'education',
                 'body_type',
                 'exercise',
-            ]);
+            ] as $column) {
+                if (Schema::hasColumn('groups', $column)) {
+                    $columnsToDrop[] = $column;
+                }
+            }
+
+            if (!empty($columnsToDrop)) {
+                $table->dropColumn($columnsToDrop);
+            }
         });
     }
 };
-
