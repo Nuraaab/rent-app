@@ -243,13 +243,13 @@ class GroupController extends Controller
                     // Update existing rejected request to pending
                     $group->members()->updateExistingPivot($user->id, [
                         'status' => 'pending',
-                        'joined_at' => now()
+                        'joined_at' => now(),
                     ]);
                 } else {
                     // Create new pending request
                     $group->members()->attach($user->id, [
                         'status' => 'pending',
-                        'joined_at' => now()
+                        'joined_at' => now(),
                     ]);
                 }
                 
@@ -266,12 +266,12 @@ class GroupController extends Controller
                     // Update status to accepted if it was rejected
                     $group->members()->updateExistingPivot($user->id, [
                         'status' => 'accepted',
-                        'joined_at' => now()
+                        'joined_at' => now(),
                     ]);
                 } else {
                     $group->members()->attach($user->id, [
                         'status' => 'accepted',
-                        'joined_at' => now()
+                        'joined_at' => now(),
                     ]);
                 }
                 

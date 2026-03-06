@@ -15,6 +15,14 @@ class NetworkingProfile extends Model
         'description',
         'cover_image',
         'privacy',
+        'height',
+        'pets',
+        'children',
+        'politics',
+        'faith_identity',
+        'education',
+        'body_type',
+        'exercise',
     ];
 
     protected $casts = [

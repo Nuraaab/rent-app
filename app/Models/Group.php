@@ -29,6 +29,14 @@ class Group extends Model
         'repeat',
         'group_banner_image',
         'admin_approval',
+        'height',
+        'pets',
+        'children',
+        'politics',
+        'faith_identity',
+        'education',
+        'body_type',
+        'exercise',
         'created_by',
     ];
 
