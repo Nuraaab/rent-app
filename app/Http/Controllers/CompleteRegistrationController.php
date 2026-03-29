@@ -4,10 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
-class CompleteRegistrationController extends Controller
-{
-    public function complete(Request $request)
-    {
+class CompleteRegistrationController extends Controller {
+    public function complete(Request $request) {
         $user = $request->user();
 
         // Validate the incoming request data
@@ -19,6 +17,7 @@ class CompleteRegistrationController extends Controller
             'faith_identity' => 'nullable|string|max:60',
             'education' => 'nullable|string|max:40',
             'body_type' => 'nullable|string|max:20',
+            'email' => 'nullable|string|email|max:255|unique:users,email,' . $user->id,
             'first_name' => 'nullable|string|max:255',
             'last_name' => 'nullable|string|max:255',
             'user_pictures' => 'nullable|array',
