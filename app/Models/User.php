@@ -170,6 +170,11 @@ class User extends Authenticatable
         return $this->hasMany(RoommateInteraction::class, 'target_user_id');
     }
 
+    public function userPictures()
+    {
+        return $this->hasMany(UserPicture::class);
+    }
+
     /**
      * The attributes that should be hidden for serialization.
      *

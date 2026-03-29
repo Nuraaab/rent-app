@@ -44,15 +44,7 @@ class CreateGroupRequest extends FormRequest
             'repeat' => 'nullable|string|max:255',
             'admin_approval' => 'nullable|boolean',
             'group_banner_image' => 'nullable|string|url',
-            'cover_image' => 'nullable|string|url',
-            'height' => 'nullable|string|max:20',
-            'pets' => 'nullable|string|in:cat,dog,other',
-            'children' => 'nullable|string|in:dont_want,want_someday,have_and_want_more,have_and_dont_want_more',
-            'politics' => 'nullable|string|in:liberal,moderate,conservative,other',
-            'faith_identity' => 'nullable|string|in:agnostic,anglican,baptist,catholic,church_of_christ,episcopalian,evangelical,lutheran,methodist,nazarene,non_denominational,orthodox,pentecostal,presbyterian,spiritual_but_not_religious,not_sure_yet,other',
-            'education' => 'nullable|string|in:high_school,some_college,associates_degree,graduate_degree,phd_post_doctoral',
-            'body_type' => 'nullable|string|in:fit,curvy,slim,chubby',
-            'exercise' => 'nullable|string|in:never,sometimes,often',
+            'cover_image' => 'nullable|string|url'
         ];
     }
 

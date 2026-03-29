@@ -29,7 +29,7 @@ class UserRequest extends FormRequest
             'email' => 'required|email|unique:users',
             'password' => 'required_with:confirm_password|same:confirm_password|string|min:4',  
             "phone_number" => 'required',
-            "profile_image_path" => 'required',
+            "profile_image_path" => 'required'
         ];
     }
 

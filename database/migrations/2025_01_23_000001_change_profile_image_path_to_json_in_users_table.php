@@ -33,10 +33,9 @@ return new class extends Migration
             }
         }
 
-        // Change column type to JSON
-        Schema::table('users', function (Blueprint $table) {
-            $table->json('profile_image_path')->nullable()->change();
-        });
+        // Drop the inherited string default before converting to JSON.
+        DB::statement("ALTER TABLE users ALTER profile_image_path DROP DEFAULT");
+        DB::statement("ALTER TABLE users MODIFY profile_image_path JSON NULL");
     }
 
     /**
@@ -57,9 +56,7 @@ return new class extends Migration
             }
         }
 
-        // Change column type back to string
-        Schema::table('users', function (Blueprint $table) {
-            $table->string('profile_image_path')->default('default.jpg')->change();
-        });
+        // Restore the original string column and default.
+        DB::statement("ALTER TABLE users MODIFY profile_image_path VARCHAR(255) NOT NULL DEFAULT 'default.jpg'");
     }
 };

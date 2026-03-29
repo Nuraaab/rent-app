@@ -4,13 +4,11 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
-    public function up(): void
-    {
+    public function up(): void {
         if (Schema::hasTable('roommate_preferences')) {
             return;
         }
@@ -31,15 +29,14 @@ return new class extends Migration
             $table->date('move_in_to')->nullable();
             $table->timestamps();
 
-            $table->index(['gender_preference', 'min_budget', 'max_budget']);
+            $table->index(['gender_preference', 'min_budget', 'max_budget'], 'roommate_pref_search_index');
         });
     }
 
     /**
      * Reverse the migrations.
      */
-    public function down(): void
-    {
+    public function down(): void {
         Schema::dropIfExists('roommate_preferences');
     }
 };

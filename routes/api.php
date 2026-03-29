@@ -25,6 +25,7 @@ use App\Http\Controllers\ChatController;
 use App\Http\Controllers\UserInteractionController;
 use App\Http\Controllers\NetworkingController;
 use App\Http\Controllers\RoommateController;
+use App\Http\Controllers\CompleteRegistrationController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -40,56 +41,10 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-// Route::group(['middleware' => ['api.auth.check']], function () {
-//     Route::get('/auth/check-auth', [UserController::class, 'checkAuth'])->name('check-auth');
-//     Route::post('/auth/logout', [UserController::class, 'logout'])->name('logout');
-//     Route::get('/auth/getuser/{id}', [UserController::class, 'getUser'])->name('getuser');
-//     Route::post('/rental/add', [RentalController::class, 'addRental'])->name('addRental');
-//     Route::post('/rental/post', [RentalController::class, 'postRental'])->name('postRental');
-//     Route::post('/jobs/add', [JobPositionController::class, 'addJob'])->name('addjobs');
-
-//     Route::post('/category/add', [CategoryController::class, 'addCategory'])->name('addcategory');
-//     Route::post('/houseoffer/add', [HouseOfferController::class, 'addHouseOffer'])->name('addhouseoffer');
-
-//     Route::post('/housegallery/add', [HouseGallaryController::class, 'addHouseGallery'])->name('addhousegallery');
-//     Route::post('/bedgallery/add', [BedGalleryController::class, 'addBedGallery'])->name('addbedgallery');
-
-//     Route::post('/review/add', [ReviewController::class, 'addReview'])->name('addreview');
-
-//     Route::post('/responsibility/add', [ResponsibilityController::class, 'addResponsibility'])->name('addresponsibility');
-//     Route::post('/qualification/add', [QualificationController::class, 'addQualification'])->name('addqualification');
-
-//     Route::post('/rental/update/{id}', [RentalController::class, 'updateRental'])->name('updaterental');
-//     Route::post('/jobs/update/{id}', [JobPositionController::class, 'updateJob'])->name('updatejob');
-
-//     Route::delete('/rental/delete/{id}', [RentalController::class, 'deleteHouse'])->name('deletehouse');
-//     Route::delete('/jobs/delete/{id}', [JobPositionController::class, 'deleteJob'])->name('deletejob');
-
-//     Route::post('/houseoffer/update/{id}', [HouseOfferController::class, 'updateHouseOffer'])->name('updatehouseOffer');
-//     Route::delete('houseoffer/delete/{id}', [HouseOfferController::class, 'deleteHouseOffer'])->name('deleteHouseOffer');
-
-//     Route::post('/responsibility/update/{id}', [ResponsibilityController::class, 'updateResponsibility'])->name('updateresponsibility');
-//     Route::delete('/responsibility/delete/{id}', [ResponsibilityController::class, 'deleteResponsibility'])->name('deleteresponsibility');
-
-//     Route::post('/qualification/update/{id}', [QualificationController::class, 'updateQualification'])->name('updatequalification');
-//     Route::delete('/qualification/delete/{id}', [QualificationController::class, 'deleteQualification'])->name('deletequalification');
-
-//     Route::post('/favorites/add', [FavoriteController::class, 'addFavorite'])->name('add_favorite');
-//     Route::post('/favorites/remove', [FavoriteController::class, 'removeFavorite'])->name('remove_favorite');
-//     Route::get('/favorites', [FavoriteController::class, 'getFavorites'])->name('get_favorite');
-//     Route::get('/jobfavorites', [FavoriteController::class, 'getJobFavorites'])->name('get_jobfavorite');
-//     Route::post('/check-rental-favorite', [FavoriteController::class, 'checkRentalFavoriteStatus']);
-//     Route::post('/check-job-favorite', [FavoriteController::class, 'checkJobFavoriteStatus']);
-//     Route::delete('/remove-rental-favorite', [FavoriteController::class, 'removeRentalFavorite']);
-//     Route::delete('/remove-job-favorite', [FavoriteController::class, 'removeJobFavorite']);
-
-//     Route::post('/applications', [ApplicationsReservationController::class, 'create']);
-//     Route::get('/applications', [ApplicationsReservationController::class, 'index']); 
-//     Route::get('/applications/forme', [ApplicationsReservationController::class, 'appForMe']);
-// });
-
 
 Route::group(['middleware'=>['auth:sanctum']],function(){
+    // complete registration route
+    Route::post('/user/complete-registration', [CompleteRegistrationController::class, 'complete']);
     // user
     Route::get('/user', [UserController::class, 'getUser']); 
     Route::post('/user/update', [UserController::class, 'updateUser']);
