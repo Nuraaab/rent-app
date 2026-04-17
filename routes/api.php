@@ -22,6 +22,7 @@ use App\Http\Controllers\PostController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\CommunityInviteController;
 use App\Http\Controllers\UserInteractionController;
 use App\Http\Controllers\NetworkingController;
 use App\Http\Controllers\RoommateController;
@@ -37,9 +38,9 @@ use App\Http\Controllers\CompleteRegistrationController;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
+// Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+//     return $request->user();
+// });
 
 
 Route::group(['middleware'=>['auth:sanctum']],function(){
@@ -160,6 +161,8 @@ Route::group(['middleware'=>['auth:sanctum']],function(){
     Route::post('/networking/{networkingProfile}/connect', [NetworkingController::class, 'connect']);
     Route::get('/networking/{networkingProfile}/pending-requests', [NetworkingController::class, 'pendingRequests']);
     Route::post('/networking/{networkingProfile}/approve-request', [NetworkingController::class, 'approveRequest']);
+    Route::post('/community/invitations/send', [CommunityInviteController::class, 'send']);
+    Route::get('/invite/{token}', [CommunityInviteController::class, 'accept']);
 
     // Roommate routes
     Route::get('/roommates', [RoommateController::class, 'index']);
