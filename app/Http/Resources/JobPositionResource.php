@@ -1,4 +1,4 @@
-<?php
+    <?php
 
 namespace App\Http\Resources;
 
@@ -34,7 +34,7 @@ class JobPositionResource extends JsonResource
             'longitude' => $this->longitude,
             'category' => $this->category,
             'category_type' => 'Job',
-            'user_id' => $this->user->id,
+            'user_id' => $this->user?->id,
             'created_at' => $this->created_at,
             // New fields
             'company_name' => $this->company_name,
