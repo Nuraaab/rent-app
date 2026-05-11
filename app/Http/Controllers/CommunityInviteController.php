@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CommunityInvite;
 use App\Models\User;
 use App\Services\TwilioSmsService;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -29,8 +30,15 @@ class CommunityInviteController extends Controller {
             $email = $contact['email'] ?? null;
 
             $existingUser = User::query()
-                ->when($phone, fn($q) => $q->orWhere('phone_number', $phone))
-                ->when($email, fn($q) => $q->orWhere('email', $email))
+                ->where(function ($q) use ($phone, $email) {
+                    if ($phone) {
+                        $q->where('phone_number', $phone);
+                    }
+
+                    if ($email) {
+                        $q->orWhere('email', $email);
+                    }
+                })
                 ->first();
 
             if ($existingUser) {
@@ -79,17 +87,40 @@ class CommunityInviteController extends Controller {
 
                 if ($phone) {
                     $inviteUrl = rtrim(config('app.url'), '/') . '/invite/' . $token;
-                    $message = "You've been invited to join SpaceGig. Create your account here: {$inviteUrl}";
-                    $smsService->send($phone, $message);
-                }
 
-                $results[] = [
-                    'name' => $contact['name'] ?? null,
-                    'phone' => $phone,
-                    'email' => $email,
-                    'has_account' => false,
-                    'status' => 'sms_sent',
-                ];
+                    $message = "You've been invited to join SpaceGig. Create your account here: {$inviteUrl}";
+
+                    try {
+                        $smsService->send($phone, $message);
+
+                        $invite->update([
+                            'status' => 'sent',
+                        ]);
+
+                        $results[] = [
+                            'name' => $contact['name'] ?? null,
+                            'phone' => $phone,
+                            'email' => $email,
+                            'has_account' => false,
+                            'status' => 'sms_sent',
+                        ];
+                    } catch (\Throwable $e) {
+
+                        report($e);
+
+                        $invite->update([
+                            'status' => 'failed',
+                        ]);
+
+                        $results[] = [
+                            'name' => $contact['name'] ?? null,
+                            'phone' => $phone,
+                            'email' => $email,
+                            'has_account' => false,
+                            'status' => 'sms_failed',
+                        ];
+                    }
+                }
             }
         }
 
