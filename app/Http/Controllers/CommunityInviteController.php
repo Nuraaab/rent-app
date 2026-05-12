@@ -24,7 +24,6 @@ class CommunityInviteController extends Controller {
         ]);
 
         $results = [];
-
         foreach ($validated['contacts'] as $contact) {
             $phone = $contact['phone'] ?? null;
             $email = $contact['email'] ?? null;
@@ -87,12 +86,10 @@ class CommunityInviteController extends Controller {
 
                 if ($phone) {
                     $inviteUrl = rtrim(config('app.url'), '/') . '/invite/' . $token;
-
                     $message = "You've been invited to join SpaceGig. Create your account here: {$inviteUrl}";
 
                     try {
                         $smsService->send($phone, $message);
-
                         $invite->update([
                             'status' => 'sent',
                         ]);
@@ -105,9 +102,9 @@ class CommunityInviteController extends Controller {
                             'status' => 'sms_sent',
                         ];
                     } catch (\Throwable $e) {
+                        \Log::info('Error:' . $e);
 
                         report($e);
-
                         $invite->update([
                             'status' => 'failed',
                         ]);
