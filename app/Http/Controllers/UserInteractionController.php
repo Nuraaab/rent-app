@@ -11,13 +11,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
-class UserInteractionController extends Controller
-{
+class UserInteractionController extends Controller {
     /**
      * Send an interaction (like, nudge, or super_like) to a user.
      */
-    public function sendInteraction(Request $request): JsonResponse
-    {
+    public function sendInteraction(Request $request): JsonResponse {
         $validator = Validator::make($request->all(), [
             'target_user_id' => 'required|exists:users,id',
             'group_id' => 'required|exists:groups,id',
@@ -46,7 +44,7 @@ class UserInteractionController extends Controller
             }
 
             $groupId = $request->group_id;
-            
+
             // Check if interaction already exists (for toggle functionality)
             $existingInteraction = UserInteraction::where('user_id', $currentUserId)
                 ->where('target_user_id', $targetUserId)
@@ -162,7 +160,6 @@ class UserInteractionController extends Controller
                     'nudge_usage' => $updatedNudgeUsage,
                 ],
             ], 201);
-
         } catch (\Exception $e) {
             Log::error('Error sending interaction', [
                 'user_id' => Auth::id(),
@@ -182,11 +179,10 @@ class UserInteractionController extends Controller
     /**
      * Get user's nudge usage statistics.
      */
-    public function getNudgeUsage(): JsonResponse
-    {
+    public function getNudgeUsage(): JsonResponse {
         try {
             $userId = Auth::id();
-            
+
             $nudgeUsage = NudgeUsage::firstOrCreate(
                 ['user_id' => $userId],
                 [
@@ -206,7 +202,6 @@ class UserInteractionController extends Controller
                     'last_reset_date' => $nudgeUsage->last_reset_date->toDateString(),
                 ],
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error fetching nudge usage', [
                 'user_id' => Auth::id(),
@@ -224,35 +219,38 @@ class UserInteractionController extends Controller
     /**
      * Get interactions received by the current user.
      */
-    public function getReceivedInteractions(Request $request): JsonResponse
-    {
+    public function getReceivedInteractions(Request $request): JsonResponse {
         try {
             $userId = Auth::id();
-            $groupId = $request->input('group_id'); // Optional group filter
-            
+            $groupId = $request->input('group_id');
+
             $query = UserInteraction::where('target_user_id', $userId)
-                ->with(['user:id,first_name,last_name,email,profile_image_path', 'group:id,title']);
-            
+                ->with([
+                    'user:id,first_name,last_name,email,profile_image_path,phone_number,height,pets,children,politics,faith_identity,education,body_type,exercise',
+                    'user.userPictures',
+                    'group:id,title'
+                ]);
+
             if ($groupId) {
                 $query->where('group_id', $groupId);
             }
-            
+
             $interactions = $query->orderBy('created_at', 'desc')->get();
 
-            // Group by type and count
             $counts = [
                 'nudge' => 0,
                 'super_like' => 0,
             ];
-            
+
             $groupedInteractions = [];
+
             foreach ($interactions as $interaction) {
                 $counts[$interaction->type] = ($counts[$interaction->type] ?? 0) + 1;
-                
+
                 if (!isset($groupedInteractions[$interaction->type])) {
                     $groupedInteractions[$interaction->type] = [];
                 }
-                
+
                 $groupedInteractions[$interaction->type][] = [
                     'id' => $interaction->id,
                     'user' => [
@@ -261,6 +259,25 @@ class UserInteractionController extends Controller
                         'last_name' => $interaction->user->last_name,
                         'email' => $interaction->user->email,
                         'profile_image_path' => $interaction->user->profile_image_path,
+                        'phone_number' => $interaction->user->phone_number,
+                        'height' => $interaction->user->height,
+                        'pets' => $interaction->user->pets,
+                        'children' => $interaction->user->children,
+                        'politics' => $interaction->user->politics,
+                        'faith_identity' => $interaction->user->faith_identity,
+                        'education' => $interaction->user->education,
+                        'body_type' => $interaction->user->body_type,
+                        'exercise' => $interaction->user->exercise,
+                        'user_pictures' => $interaction->user->userPictures->map(function ($picture) {
+                            return [
+                                'id' => $picture->id,
+                                'user_id' => $picture->user_id,
+                                'picture_path' => $picture->picture_path,
+                                'picture_url' => $picture->picture_url,
+                                'created_at' => $picture->created_at,
+                                'updated_at' => $picture->updated_at,
+                            ];
+                        })->values(),
                     ],
                     'group' => $interaction->group ? [
                         'id' => $interaction->group->id,
@@ -285,6 +302,25 @@ class UserInteractionController extends Controller
                                 'last_name' => $interaction->user->last_name,
                                 'email' => $interaction->user->email,
                                 'profile_image_path' => $interaction->user->profile_image_path,
+                                'phone_number' => $interaction->user->phone_number,
+                                'height' => $interaction->user->height,
+                                'pets' => $interaction->user->pets,
+                                'children' => $interaction->user->children,
+                                'politics' => $interaction->user->politics,
+                                'faith_identity' => $interaction->user->faith_identity,
+                                'education' => $interaction->user->education,
+                                'body_type' => $interaction->user->body_type,
+                                'exercise' => $interaction->user->exercise,
+                                'user_pictures' => $interaction->user->userPictures->map(function ($picture) {
+                                    return [
+                                        'id' => $picture->id,
+                                        'user_id' => $picture->user_id,
+                                        'picture_path' => $picture->picture_path,
+                                        'picture_url' => $picture->picture_url,
+                                        'created_at' => $picture->created_at,
+                                        'updated_at' => $picture->updated_at,
+                                    ];
+                                })->values(),
                             ],
                             'group' => $interaction->group ? [
                                 'id' => $interaction->group->id,
@@ -295,7 +331,6 @@ class UserInteractionController extends Controller
                     }),
                 ],
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error fetching received interactions', [
                 'user_id' => Auth::id(),
@@ -313,32 +348,31 @@ class UserInteractionController extends Controller
     /**
      * Get interactions sent by the current user for specific target users.
      */
-    public function getSentInteractions(Request $request): JsonResponse
-    {
+    public function getSentInteractions(Request $request): JsonResponse {
         try {
             $userId = Auth::id();
-            
+
             // Handle comma-separated string or array
             $targetUserIdsInput = $request->input('target_user_ids', []);
             $groupId = $request->input('group_id');
-            
+
             if (empty($groupId)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Group ID is required',
                 ], 422);
             }
-            
+
             if (is_string($targetUserIdsInput)) {
                 $targetUserIds = array_filter(
                     array_map('intval', explode(',', $targetUserIdsInput))
                 );
             } else {
-                $targetUserIds = is_array($targetUserIdsInput) 
+                $targetUserIds = is_array($targetUserIdsInput)
                     ? array_filter(array_map('intval', $targetUserIdsInput))
                     : [];
             }
-            
+
             if (empty($targetUserIds)) {
                 return response()->json([
                     'success' => true,
@@ -365,7 +399,6 @@ class UserInteractionController extends Controller
                 'success' => true,
                 'data' => $result,
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error fetching sent interactions', [
                 'user_id' => Auth::id(),

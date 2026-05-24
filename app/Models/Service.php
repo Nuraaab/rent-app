@@ -6,8 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Service extends Model
-{
+class Service extends Model {
     use HasFactory;
 
     protected $fillable = [
@@ -27,38 +26,38 @@ class Service extends Model
         'updated_at' => 'datetime',
     ];
 
+    public function getImageUrlAttribute($value) {
+        return $value ? url($value) : null;
+    }
+
     /**
      * Get the user who created the service.
      */
-    public function user(): BelongsTo
-    {
+    public function user(): BelongsTo {
         return $this->belongsTo(User::class);
     }
 
     /**
      * Scope to get featured services.
      */
-    public function scopeFeatured($query)
-    {
+    public function scopeFeatured($query) {
         return $query->where('featured', true);
     }
 
     /**
      * Scope to order services by latest first.
      */
-    public function scopeLatest($query)
-    {
+    public function scopeLatest($query) {
         return $query->orderBy('created_at', 'desc');
     }
 
     /**
      * Scope to search services by title or description.
      */
-    public function scopeSearch($query, $search)
-    {
+    public function scopeSearch($query, $search) {
         return $query->where(function ($q) use ($search) {
             $q->where('title', 'like', "%{$search}%")
-              ->orWhere('description', 'like', "%{$search}%");
+                ->orWhere('description', 'like', "%{$search}%");
         });
     }
 }

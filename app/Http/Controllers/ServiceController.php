@@ -9,13 +9,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
-class ServiceController extends Controller
-{
+class ServiceController extends Controller {
     /**
      * Get all services with pagination and filtering.
      */
-    public function index(Request $request): JsonResponse
-    {
+    public function index(Request $request): JsonResponse {
         try {
             $query = Service::with(['user'])->latest();
 
@@ -42,7 +40,6 @@ class ServiceController extends Controller
                     'total' => $services->total(),
                 ]
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -55,8 +52,7 @@ class ServiceController extends Controller
     /**
      * Create a new service.
      */
-    public function store(Request $request): JsonResponse
-    {
+    public function store(Request $request): JsonResponse {
         try {
             $request->validate([
                 'title' => 'required|string|max:255',
@@ -78,9 +74,17 @@ class ServiceController extends Controller
                 'featured' => $request->featured ?? false,
             ];
 
-            // Handle image URL from the upload service
-            if ($request->has('image_url') && !empty($request->image_url)) {
-                $data['image_url'] = $request->image_url;
+            if ($request->hasFile('image')) {
+                $file = $request->file('image');
+                $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $destinationPath = public_path('assets/images/services');
+
+                if (!file_exists($destinationPath)) {
+                    mkdir($destinationPath, 0755, true);
+                }
+
+                $file->move($destinationPath, $fileName);
+                $data['image_url'] = 'assets/images/services/' . $fileName;
             }
 
             $service = Service::create($data);
@@ -91,10 +95,9 @@ class ServiceController extends Controller
                 'message' => 'Service created successfully',
                 'data' => $service
             ], 201);
-
         } catch (\Exception $e) {
             \Log::error('Service creation error: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create service',
@@ -106,8 +109,7 @@ class ServiceController extends Controller
     /**
      * Get a specific service.
      */
-    public function show(Service $service): JsonResponse
-    {
+    public function show(Service $service): JsonResponse {
         try {
             $service->load(['user']);
 
@@ -115,7 +117,6 @@ class ServiceController extends Controller
                 'success' => true,
                 'data' => $service
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -128,8 +129,7 @@ class ServiceController extends Controller
     /**
      * Update a service.
      */
-    public function update(Request $request, Service $service): JsonResponse
-    {
+    public function update(Request $request, Service $service): JsonResponse {
         try {
             // Check if user is the author of the service
             if ($service->user_id !== Auth::id()) {
@@ -150,8 +150,13 @@ class ServiceController extends Controller
             ]);
 
             $service->update($request->only([
-                'title', 'description', 'image_url', 'service_link',
-                'contact_phone', 'contact_email', 'featured'
+                'title',
+                'description',
+                'image_url',
+                'service_link',
+                'contact_phone',
+                'contact_email',
+                'featured'
             ]));
 
             $service->load(['user']);
@@ -161,7 +166,6 @@ class ServiceController extends Controller
                 'message' => 'Service updated successfully',
                 'data' => $service
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -174,8 +178,7 @@ class ServiceController extends Controller
     /**
      * Delete a service.
      */
-    public function destroy(Service $service): JsonResponse
-    {
+    public function destroy(Service $service): JsonResponse {
         try {
             // Check if user is the author of the service
             if ($service->user_id !== Auth::id()) {
@@ -191,7 +194,6 @@ class ServiceController extends Controller
                 'success' => true,
                 'message' => 'Service deleted successfully'
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -204,12 +206,11 @@ class ServiceController extends Controller
     /**
      * Get user's own services.
      */
-    public function myServices(): JsonResponse
-    {
+    public function myServices(): JsonResponse {
         try {
             $userId = Auth::id();
             \Log::info('🔍 [MyServices] User ID: ' . $userId);
-            
+
             if (!$userId) {
                 \Log::warning('🔴 [MyServices] User not authenticated');
                 return response()->json([
@@ -218,14 +219,14 @@ class ServiceController extends Controller
                     'data' => []
                 ], 401);
             }
-            
+
             $services = Service::where('user_id', $userId)
                 ->with(['user'])
                 ->latest()
                 ->get();
-            
+
             \Log::info('🔍 [MyServices] Found ' . $services->count() . ' services for user ' . $userId);
-            
+
             if ($services->count() > 0) {
                 \Log::info('🔍 [MyServices] First service ID: ' . $services->first()->id);
                 \Log::info('🔍 [MyServices] First service title: ' . $services->first()->title);
@@ -235,7 +236,6 @@ class ServiceController extends Controller
                 'success' => true,
                 'data' => $services
             ]);
-
         } catch (\Exception $e) {
             \Log::error('🔴 [MyServices] Error: ' . $e->getMessage());
             \Log::error('🔴 [MyServices] Stack trace: ' . $e->getTraceAsString());

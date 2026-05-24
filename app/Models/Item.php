@@ -28,6 +28,9 @@ class Item extends Model
         'updated_at' => 'datetime',
     ];
 
+    public function getImageUrlAttribute($value) {
+        return $value ? url($value) : null;
+    }
     /**
      * Get the user who created the item.
      */

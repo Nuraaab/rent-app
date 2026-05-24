@@ -52,6 +52,10 @@ class Group extends Model
         'is_joined',
         'next_meeting',
     ];
+    
+    public function getGroupBannerImageAttribute($value) {
+        return $value ? url($value) : null;
+    }
 
     /**
      * Get the route key for the model.

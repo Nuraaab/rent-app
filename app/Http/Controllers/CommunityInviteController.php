@@ -4,14 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\CommunityInvite;
 use App\Models\User;
-use App\Services\TwilioSmsService;
+use App\Services\VonageSmsService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class CommunityInviteController extends Controller {
-    public function send(Request $request, TwilioSmsService $smsService) {
+    public function send(Request $request, VonageSmsService $smsService) {
+        \Log::info('Vonage service called');
         $user = $request->user();
 
         $validated = $request->validate([
@@ -19,14 +20,15 @@ class CommunityInviteController extends Controller {
             'target_id' => 'required|integer',
             'contacts' => 'required|array|min:1',
             'contacts.*.name' => 'nullable|string|max:255',
-            'contacts.*.phone' => 'nullable|string|max:30',
+            'contacts.*.phone_number' => 'nullable|string|max:30',
             'contacts.*.email' => 'nullable|string|email|max:255',
         ]);
 
         $results = [];
         foreach ($validated['contacts'] as $contact) {
-            $phone = $contact['phone'] ?? null;
+            $phone = $contact['phone_number'] ?? null;
             $email = $contact['email'] ?? null;
+
 
             $existingUser = User::query()
                 ->where(function ($q) use ($phone, $email) {
@@ -72,7 +74,7 @@ class CommunityInviteController extends Controller {
             } else {
                 $token = Str::random(40);
 
-                CommunityInvite::create([
+                $invite = CommunityInvite::create([
                     'sender_id' => $user->id,
                     'recipient_user_id' => null,
                     'type' => $validated['type'],
@@ -85,11 +87,16 @@ class CommunityInviteController extends Controller {
                 ]);
 
                 if ($phone) {
-                    $inviteUrl = rtrim(config('app.url'), '/') . '/invite/' . $token;
+                    $inviteUrl = rtrim(config('app.frontend_url'), '/') . '/invite/' . $token;
                     $message = "You've been invited to join SpaceGig. Create your account here: {$inviteUrl}";
+
+                    \Log::info('APP_URL: ' . config('app.url'));
+                    \Log::info('FRONTEND_URL: ' . config('app.frontend_url'));
+                    \Log::info('URL:' . $inviteUrl);
 
                     try {
                         $smsService->send($phone, $message);
+
                         $invite->update([
                             'status' => 'sent',
                         ]);
@@ -146,15 +153,15 @@ class CommunityInviteController extends Controller {
 
     protected function createNetworkingConnectionIfNeeded(int $profileId, int $recipientUserId, int $senderUserId): void {
         $exists = DB::table('networking_connections')
-            ->where('profile_id', $profileId)
+            ->where('networking_profile_id', $profileId)
             ->where('user_id', $recipientUserId)
             ->exists();
 
         if (! $exists) {
             DB::table('networking_connections')->insert([
-                'profile_id' => $profileId,
+                'networking_profile_id' => $profileId,
                 'user_id' => $recipientUserId,
-                'invited_by' => $senderUserId,
+                // 'invited_by' => $senderUserId,
                 'status' => 'accepted',
                 'created_at' => now(),
                 'updated_at' => now(),

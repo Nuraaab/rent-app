@@ -10,13 +10,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
-class NetworkingController extends Controller
-{
+class NetworkingController extends Controller {
     /**
      * Get all networking profiles with optional filtering.
      */
-    public function index(Request $request): JsonResponse
-    {
+    public function index(Request $request): JsonResponse {
         // Manually authenticate user if token is present (for public routes)
         if ($request->bearerToken()) {
             try {
@@ -30,7 +28,7 @@ class NetworkingController extends Controller
             }
         }
 
-        $query = NetworkingProfile::with(['user']);
+        $query = NetworkingProfile::with(['user.userPictures']);
 
         // Filter by privacy
         if ($request->has('privacy') && $request->privacy) {
@@ -42,7 +40,7 @@ class NetworkingController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
@@ -84,11 +82,9 @@ class NetworkingController extends Controller
     /**
      * Get a specific networking profile by ID.
      */
-    public function show(NetworkingProfile $networkingProfile): JsonResponse
-    {
-        $networkingProfile->load(['user']);
+    public function show(NetworkingProfile $networkingProfile): JsonResponse {
+        $networkingProfile->load(['user.userPictures']);
 
-        // If user is authenticated, add connection status and pending request status
         if (Auth::check()) {
             $userId = Auth::id();
             $networkingProfile->is_connected = $networkingProfile->connections()
@@ -104,9 +100,11 @@ class NetworkingController extends Controller
             $networkingProfile->can_edit = false;
         }
 
-        // Build a lightweight list of accepted connections with user info
         $connections = $networkingProfile->acceptedConnections()
-            ->with(['user:id,first_name,last_name,profile_image_path'])
+            ->with([
+                'user:id,first_name,last_name,email,phone_number,profile_image_path,height,pets,children,politics,faith_identity,education,body_type,exercise',
+                'user.userPictures'
+            ])
             ->get()
             ->map(function ($conn) {
                 return [
@@ -115,7 +113,27 @@ class NetworkingController extends Controller
                         'id' => $conn->user->id,
                         'first_name' => $conn->user->first_name,
                         'last_name' => $conn->user->last_name,
+                        'email' => $conn->user->email,
+                        'phone_number' => $conn->user->phone_number,
                         'profile_image_path' => $conn->user->profile_image_path,
+                        'height' => $conn->user->height,
+                        'pets' => $conn->user->pets,
+                        'children' => $conn->user->children,
+                        'politics' => $conn->user->politics,
+                        'faith_identity' => $conn->user->faith_identity,
+                        'education' => $conn->user->education,
+                        'body_type' => $conn->user->body_type,
+                        'exercise' => $conn->user->exercise,
+                        'user_pictures' => $conn->user->userPictures->map(function ($picture) {
+                            return [
+                                'id' => $picture->id,
+                                'user_id' => $picture->user_id,
+                                'picture_path' => $picture->picture_path,
+                                'picture_url' => $picture->picture_url,
+                                'created_at' => $picture->created_at,
+                                'updated_at' => $picture->updated_at,
+                            ];
+                        })->values(),
                     ],
                     'connected_at' => optional($conn->created_at)->toISOString(),
                 ];
@@ -131,12 +149,11 @@ class NetworkingController extends Controller
     /**
      * Create a new networking profile.
      */
-    public function store(Request $request): JsonResponse
-    {
+    public function store(Request $request): JsonResponse {
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'description' => 'required|string',
-            'cover_image' => 'nullable|string',
+            'cover_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
             'privacy' => 'nullable|string|in:open,closed'
         ]);
 
@@ -151,26 +168,32 @@ class NetworkingController extends Controller
         try {
             $data = $validator->validated();
             $data['user_id'] = Auth::id();
-            
-            // Set default privacy if not provided
+
             if (!isset($data['privacy'])) {
                 $data['privacy'] = 'open';
             }
 
-            // Handle cover image URL
-            if ($request->has('cover_image') && !empty($request->cover_image)) {
-                $data['cover_image'] = $request->cover_image;
+            if ($request->hasFile('cover_image')) {
+                $file = $request->file('cover_image');
+                $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $destinationPath = public_path('assets/images/networks');
+
+                if (!file_exists($destinationPath)) {
+                    mkdir($destinationPath, 0755, true);
+                }
+
+                $file->move($destinationPath, $fileName);
+                $data['cover_image'] = 'assets/images/networks/' . $fileName;
             }
 
             $profile = NetworkingProfile::create($data);
-            
-            // Automatically connect the creator to their own profile
+
             NetworkingConnection::create([
                 'user_id' => Auth::id(),
                 'networking_profile_id' => $profile->id,
                 'status' => 'accepted',
             ]);
-            
+
             $profile->load(['user']);
             $profile->can_edit = true;
 
@@ -179,12 +202,7 @@ class NetworkingController extends Controller
                 'message' => 'Networking profile created successfully',
                 'data' => $profile
             ], 201);
-
         } catch (\Exception $e) {
-            Log::error('Error creating networking profile', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create networking profile',
@@ -196,8 +214,7 @@ class NetworkingController extends Controller
     /**
      * Update a networking profile.
      */
-    public function update(Request $request, NetworkingProfile $networkingProfile): JsonResponse
-    {
+    public function update(Request $request, NetworkingProfile $networkingProfile): JsonResponse {
         // Check if user owns the profile
         if ((int) $networkingProfile->user_id !== (int) Auth::id()) {
             return response()->json([
@@ -241,7 +258,6 @@ class NetworkingController extends Controller
                 'message' => 'Networking profile updated successfully',
                 'data' => $networkingProfile
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error updating networking profile', [
                 'profile_id' => $networkingProfile->id,
@@ -259,8 +275,7 @@ class NetworkingController extends Controller
     /**
      * Delete a networking profile.
      */
-    public function destroy(NetworkingProfile $networkingProfile): JsonResponse
-    {
+    public function destroy(NetworkingProfile $networkingProfile): JsonResponse {
         // Check if user owns the profile
         if ((int) $networkingProfile->user_id !== (int) Auth::id()) {
             return response()->json([
@@ -276,7 +291,6 @@ class NetworkingController extends Controller
                 'success' => true,
                 'message' => 'Networking profile deleted successfully',
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error deleting networking profile', [
                 'profile_id' => $networkingProfile->id,
@@ -294,8 +308,7 @@ class NetworkingController extends Controller
     /**
      * Connect to a networking profile or request connection (for private profiles).
      */
-    public function connect(NetworkingProfile $networkingProfile): JsonResponse
-    {
+    public function connect(NetworkingProfile $networkingProfile): JsonResponse {
         try {
             $userId = Auth::id();
 
@@ -331,7 +344,7 @@ class NetworkingController extends Controller
                     // Rejected connection - create new pending request
                     $existingConnection->status = 'pending';
                     $existingConnection->save();
-                    
+
                     if ($networkingProfile->privacy === 'closed') {
                         return response()->json([
                             'success' => true,
@@ -384,7 +397,6 @@ class NetworkingController extends Controller
                     'data' => $networkingProfile,
                 ], 201);
             }
-
         } catch (\Exception $e) {
             Log::error('Error connecting to networking profile', [
                 'profile_id' => $networkingProfile->id,
@@ -403,12 +415,10 @@ class NetworkingController extends Controller
     /**
      * Get pending connection requests for a networking profile (owner only).
      */
-    public function pendingRequests(NetworkingProfile $networkingProfile): JsonResponse
-    {
+    public function pendingRequests(NetworkingProfile $networkingProfile): JsonResponse {
         try {
             $user = Auth::user();
-            
-            // Check if user owns the profile
+
             if ((int) $networkingProfile->user_id !== (int) $user->id) {
                 return response()->json([
                     'success' => false,
@@ -418,9 +428,12 @@ class NetworkingController extends Controller
 
             $pendingRequests = NetworkingConnection::where('networking_profile_id', $networkingProfile->id)
                 ->where('status', 'pending')
-                ->with('user:id,first_name,last_name,email,profile_image_path,phone_number')
+                ->with([
+                    'user:id,first_name,last_name,email,profile_image_path,phone_number,height,pets,children,politics,faith_identity,education,body_type,exercise',
+                    'user.userPictures'
+                ])
                 ->get();
-            
+
             $formattedRequests = $pendingRequests->map(function ($connection) {
                 return [
                     'id' => $connection->user->id,
@@ -429,8 +442,26 @@ class NetworkingController extends Controller
                     'email' => $connection->user->email,
                     'profile_image_path' => $connection->user->profile_image_path,
                     'phone_number' => $connection->user->phone_number,
+                    'height' => $connection->user->height,
+                    'pets' => $connection->user->pets,
+                    'children' => $connection->user->children,
+                    'politics' => $connection->user->politics,
+                    'faith_identity' => $connection->user->faith_identity,
+                    'education' => $connection->user->education,
+                    'body_type' => $connection->user->body_type,
+                    'exercise' => $connection->user->exercise,
                     'requested_at' => $connection->created_at,
                     'connection_id' => $connection->id,
+                    'user_pictures' => $connection->user->userPictures->map(function ($picture) {
+                        return [
+                            'id' => $picture->id,
+                            'user_id' => $picture->user_id,
+                            'picture_path' => $picture->picture_path,
+                            'picture_url' => $picture->picture_url,
+                            'created_at' => $picture->created_at,
+                            'updated_at' => $picture->updated_at,
+                        ];
+                    })->values(),
                 ];
             });
 
@@ -438,7 +469,6 @@ class NetworkingController extends Controller
                 'success' => true,
                 'data' => $formattedRequests
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -451,11 +481,10 @@ class NetworkingController extends Controller
     /**
      * Approve or reject a connection request (owner only).
      */
-    public function approveRequest(NetworkingProfile $networkingProfile, Request $request): JsonResponse
-    {
+    public function approveRequest(NetworkingProfile $networkingProfile, Request $request): JsonResponse {
         try {
             $user = Auth::user();
-            
+
             // Check if user owns the profile
             if ((int) $networkingProfile->user_id !== (int) $user->id) {
                 return response()->json([
@@ -504,7 +533,6 @@ class NetworkingController extends Controller
                     'message' => 'Connection request rejected'
                 ]);
             }
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

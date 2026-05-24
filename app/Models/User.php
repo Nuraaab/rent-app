@@ -9,9 +9,9 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Models\UserInteraction;
 use App\Models\NudgeUsage;
+use Illuminate\Support\Facades\URL;
 
-class User extends Authenticatable
-{
+class User extends Authenticatable {
     use HasApiTokens, HasFactory, Notifiable;
 
     /**
@@ -28,115 +28,108 @@ class User extends Authenticatable
         'profile_image_path',
         'firebase_uid',
         'is_online',
-        'last_seen'
+        'last_seen',
+        'height',
+        'pets',
+        'children',
+        'politics',
+        'faith_identity',
+        'education',
+        'body_type',
+        'exercise',
     ];
-    public function job()
-    {
+    
+    public function job() {
         return $this->jobPositions();
     }
 
-    public function jobPositions()
-    {
+    public function jobPositions() {
         return $this->hasMany(JobPosition::class);
     }
 
-    public function rentals(){
+    public function rentals() {
         return $this->hasMany(Rental::class);
-      }
-   public function review(){
-    return $this->hasMany(Review::class);
     }
-    public function favorites()
-    {
+    public function review() {
+        return $this->hasMany(Review::class);
+    }
+    public function favorites() {
         return $this->hasMany(Favorite::class);
     }
 
-    public function applications()
-    {
+    public function applications() {
         return $this->hasMany(ApplicationsReservation::class);
     }
 
-    public function joinedGroups()
-    {
+    public function joinedGroups() {
         return $this->belongsToMany(Group::class, 'group_members');
     }
 
     /**
      * Get interactions sent by this user.
      */
-    public function userInteractions()
-    {
+    public function userInteractions() {
         return $this->hasMany(UserInteraction::class, 'user_id');
     }
 
     /**
      * Get interactions received by this user.
      */
-    public function receivedInteractions()
-    {
+    public function receivedInteractions() {
         return $this->hasMany(UserInteraction::class, 'target_user_id');
     }
 
     /**
      * Get nudge usage record for this user.
      */
-    public function nudgeUsage()
-    {
+    public function nudgeUsage() {
         return $this->hasOne(NudgeUsage::class);
     }
 
     /**
      * Get networking profiles created by this user.
      */
-    public function networkingProfiles()
-    {
+    public function networkingProfiles() {
         return $this->hasMany(NetworkingProfile::class);
     }
 
     /**
      * Get networking connections made by this user.
      */
-    public function networkingConnections()
-    {
+    public function networkingConnections() {
         return $this->hasMany(NetworkingConnection::class);
     }
 
-    public function posts()
-    {
+    public function posts() {
         return $this->hasMany(Post::class);
     }
 
-    public function services()
-    {
+    public function services() {
         return $this->hasMany(Service::class);
     }
 
-    public function items()
-    {
+    public function items() {
         return $this->hasMany(Item::class);
     }
 
     /**
      * Get conversations where this user is user1
      */
-    public function conversationsAsUser1()
-    {
+    public function conversationsAsUser1() {
         return $this->hasMany(Conversation::class, 'user1_id');
     }
 
     /**
      * Get conversations where this user is user2
      */
-    public function conversationsAsUser2()
-    {
+    public function conversationsAsUser2() {
         return $this->hasMany(Conversation::class, 'user2_id');
     }
 
     /**
      * Get all conversations for this user
      */
-    public function conversations()
-    {
+    public function conversations() {
         return Conversation::where('user1_id', $this->id)
             ->orWhere('user2_id', $this->id)
             ->orderBy('last_message_at', 'desc');
@@ -145,33 +138,27 @@ class User extends Authenticatable
     /**
      * Get messages sent by this user
      */
-    public function sentMessages()
-    {
+    public function sentMessages() {
         return $this->hasMany(Message::class, 'sender_id');
     }
 
-    public function roommateProfile()
-    {
+    public function roommateProfile() {
         return $this->hasOne(RoommateProfile::class);
     }
 
-    public function roommatePreference()
-    {
+    public function roommatePreference() {
         return $this->hasOne(RoommatePreference::class);
     }
 
-    public function roommateInteractionsSent()
-    {
+    public function roommateInteractionsSent() {
         return $this->hasMany(RoommateInteraction::class, 'user_id');
     }
 
-    public function roommateInteractionsReceived()
-    {
+    public function roommateInteractionsReceived() {
         return $this->hasMany(RoommateInteraction::class, 'target_user_id');
     }
 
-    public function userPictures()
-    {
+    public function userPictures() {
         return $this->hasMany(UserPicture::class);
     }
 

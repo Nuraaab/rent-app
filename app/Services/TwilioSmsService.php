@@ -11,6 +11,8 @@ class TwilioSmsService {
             config('services.twilio.token')
         );
 
+        \Log::error('TwilioSmsService send method called');
+        \Log::error($client);
         $client->messages->create($to, [
             'from' => config('services.twilio.from'),
             'body' => $message,

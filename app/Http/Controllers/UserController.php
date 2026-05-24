@@ -13,51 +13,49 @@ use Kreait\Firebase\Factory;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-class UserController extends Controller
-{
-    public function __construct(FirebaseAuth $firebaseAuth)
-    {
+
+class UserController extends Controller {
+    protected FirebaseAuth $firebaseAuth;
+    public function __construct(FirebaseAuth $firebaseAuth) {
         $this->firebaseAuth = $firebaseAuth;
     }
- 
-   
-    public function register(UserRequest $request){
+
+
+    public function register(UserRequest $request) {
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'phone_number' => $request->phone_number,
-            'profile_image_path' =>$request->profile_image_path
+            'profile_image_path' => $request->profile_image_path
         ]);
 
-        $token=$user->createToken('myapptoken')->plainTextToken;
-        $response=[
-            'message'=>'User Created Succefully',
-            'user' =>[
-                "id"=>$user->id,
+        $token = $user->createToken('myapptoken')->plainTextToken;
+        $response = [
+            'message' => 'User Created Succefully',
+            'user' => [
+                "id" => $user->id,
                 'name' => $user->name,
-                'phone_number' =>$user->phone_number,
+                'phone_number' => $user->phone_number,
                 'email' => $user->email,
                 "profile_image_path" => $user->profile_image_path,
             ],
-            'token'=>$token,
+            'token' => $token,
         ];
-        
-        return response($response,200);
+
+        return response($response, 200);
     }
-    public function checkAuth(Request $request)
-        {
-            if (auth()->check()) {
-                return response()->json(['message' => 'User is authenticated'], 200);
-            } else {
-                return response()->json(['error' => 'User not authenticated'], 401);
-            }
+    public function checkAuth(Request $request) {
+        if (auth()->check()) {
+            return response()->json(['message' => 'User is authenticated'], 200);
+        } else {
+            return response()->json(['error' => 'User not authenticated'], 401);
         }
+    }
 
-    
 
-    public function login(Request $request)
-    {
+
+    public function login(Request $request) {
         $validator = Validator::make($request->all(), [
             'email' => [
                 'required',
@@ -111,28 +109,27 @@ class UserController extends Controller
         ], 200);
     }
 
-    
 
-    public function phoneAuth(Request $request)
-    {
+
+    public function phoneAuth(Request $request) {
         $firebase = (new Factory)
             ->withServiceAccount(config('firebase.credentials'));
-    
+
         $auth = $firebase->createAuth();
         $idToken = $request->bearerToken(); // Get the token from the Authorization header
-    
+
         try {
             $verifiedIdToken = $auth->verifyIdToken($idToken);
             $phoneNumber = $verifiedIdToken->claims()->get('phone_number');
-    
+
             // Retrieve or create the user based on the phone number
             $user = User::firstOrCreate(
                 ['phone_number' => $phoneNumber]
             );
             $token = $user->createToken('myapptoken')->plainTextToken;
-    
+
             return response()->json(['message' => 'Login successful', 'user' => $user, 'token' => $token, 'expires_in' => Carbon::now()->addDays(180)]);
-        } catch (\Kreait\Firebase\Exception\Auth\InvalidIdToken $e) {
+        } catch (\Kreait\Firebase\Exception\Auth\FailedToVerifyToken $e) {
             return response()->json(['error' => 'Invalid token'], 401);
         } catch (\Kreait\Firebase\Exception\Auth\AuthError $e) {
             return response()->json(['error' => 'Auth error'], 401);
@@ -140,10 +137,9 @@ class UserController extends Controller
     }
 
 
-  
 
-    public function googleAuth(Request $request)
-    {
+
+    public function googleAuth(Request $request) {
         $firebase = (new Factory)
             ->withServiceAccount(config('firebase.credentials'))
             ->createAuth();
@@ -158,10 +154,10 @@ class UserController extends Controller
             $verifiedToken = $firebase->verifyIdToken($idToken);
             $claims = $verifiedToken->claims()->all();
 
-            $firebaseUid = $claims['sub'] ?? null; 
+            $firebaseUid = $claims['sub'] ?? null;
             $email = $claims['email'] ?? null;
             $fullName = $claims['name'] ?? '';
-            $nameParts = explode(' ', $fullName, 2); 
+            $nameParts = explode(' ', $fullName, 2);
             $first_name = $nameParts[0] ?? '';
             $last_name = $nameParts[1] ?? '';
 
@@ -192,7 +188,7 @@ class UserController extends Controller
                 'first_name' => $first_name,
                 'last_name' => $last_name,
                 'email' => $email,
-                'firebase_uid' => $firebaseUid, 
+                'firebase_uid' => $firebaseUid,
             ]);
 
             $token = $newUser->createToken('myapptoken')->plainTextToken;
@@ -204,8 +200,7 @@ class UserController extends Controller
                 'firebaseUID' => $firebaseUid,
                 'expires_in' => Carbon::now()->addDays(180),
             ], 200);
-
-        } catch (\Kreait\Firebase\Exception\Auth\InvalidIdToken $e) {
+        } catch (\Kreait\Firebase\Exception\Auth\FailedToVerifyToken $e) {
             return response()->json(['message' => 'Invalid Firebase token: ' . $e->getMessage()], 401);
         } catch (\Exception $e) {
             Log::error('Google Auth Error: ' . $e->getMessage());
@@ -213,8 +208,7 @@ class UserController extends Controller
         }
     }
 
-    public function firebaseEmailAuth(Request $request)
-    {
+    public function firebaseEmailAuth(Request $request) {
         $firebase = (new Factory)
             ->withServiceAccount(config('firebase.credentials'))
             ->createAuth();
@@ -229,7 +223,7 @@ class UserController extends Controller
             $verifiedToken = $firebase->verifyIdToken($idToken);
             $claims = $verifiedToken->claims()->all();
 
-            $firebaseUid = $claims['sub'] ?? null; 
+            $firebaseUid = $claims['sub'] ?? null;
             $email = $claims['email'] ?? null;
             $emailVerified = $claims['email_verified'] ?? false;
 
@@ -247,7 +241,7 @@ class UserController extends Controller
 
             // Find or create user
             $user = User::where('firebase_uid', $firebaseUid)->first();
-            
+
             if (!$user) {
                 $user = User::where('email', $email)->first();
 
@@ -284,35 +278,40 @@ class UserController extends Controller
                 'firebaseUID' => $firebaseUid,
                 'expires_in' => Carbon::now()->addDays(180),
             ], 200);
-
-        } catch (\Kreait\Firebase\Exception\Auth\InvalidIdToken $e) {
+        } catch (\Kreait\Firebase\Exception\Auth\FailedToVerifyToken $e) {
             return response()->json(['message' => 'Invalid Firebase token: ' . $e->getMessage()], 401);
         } catch (\Exception $e) {
             Log::error('Firebase Email Auth Error: ' . $e->getMessage());
             return response()->json(['message' => 'An unexpected error occurred.'], 500);
         }
     }
-  
+
     public function logout(Request $request) {
         if (auth()->check()) {
             auth()->user()->tokens()->delete(); // Revoke all API tokens
             return response()->json(['message' => 'Logged Out Successfully'], 200);
         }
-    
+
         return response()->json(['error' => 'User not authenticated'], 401);
     }
 
     // user
-    public function getUser(Request $request)
-    {
+    public function getUser(Request $request) {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'Unauthenticated'
+            ], 401);
+        }
+
         return response()->json([
-            'user' => $request->user()
+            'user' => $user->load('userPictures')
         ]);
     }
 
     // Update user profile
-    public function updateUser(Request $request)
-    {
+    public function updateUser(Request $request) {
         $user = $request->user();
         $validator = Validator::make($request->all(), [
             'first_name' => 'sometimes|string|max:255',
@@ -326,29 +325,27 @@ class UserController extends Controller
             return response()->json(['errors' => $validator->errors()], 400);
         }
 
-        // Handle profile image update with history
         $updateData = $request->only('first_name', 'last_name', 'email', 'phone_number');
-        
+
         if ($request->has('profile_image_path') && $request->profile_image_path) {
             $newImagePath = $request->profile_image_path;
             $currentImages = $user->profile_image_path ?? ['current' => null, 'previous' => []];
-            
-            // If there's a current image and it's different from the new one, move it to previous
-            if (isset($currentImages['current']) && 
-                $currentImages['current'] !== null && 
-                $currentImages['current'] !== $newImagePath) {
-                
-                // Add current to previous (keep max 5)
+
+            if (
+                isset($currentImages['current']) &&
+                $currentImages['current'] !== null &&
+                $currentImages['current'] !== $newImagePath
+            ) {
+
                 $previous = $currentImages['previous'] ?? [];
                 array_unshift($previous, $currentImages['current']);
-                $previous = array_slice($previous, 0, 5); // Keep only last 5
-                
+                $previous = array_slice($previous, 0, 5);
+
                 $updateData['profile_image_path'] = [
                     'current' => $newImagePath,
                     'previous' => $previous
                 ];
             } else {
-                // First time setting image or same image
                 $updateData['profile_image_path'] = [
                     'current' => $newImagePath,
                     'previous' => $currentImages['previous'] ?? []
@@ -368,11 +365,10 @@ class UserController extends Controller
      * Get user online status
      * GET /api/user/{userId}/online-status
      */
-    public function getOnlineStatus($userId)
-    {
+    public function getOnlineStatus($userId) {
         try {
             $user = User::find($userId);
-            
+
             if (!$user) {
                 return response()->json([
                     'success' => false,
@@ -380,7 +376,6 @@ class UserController extends Controller
                 ], 404);
             }
 
-            // Consider user online if last_seen is within last 5 minutes
             $isOnline = false;
             if ($user->last_seen) {
                 $lastSeen = \Carbon\Carbon::parse($user->last_seen);
@@ -405,11 +400,10 @@ class UserController extends Controller
      * Update user's last seen timestamp
      * This should be called periodically or on API requests
      */
-    public function updateLastSeen()
-    {
+    public function updateLastSeen() {
         try {
             $user = auth()->user();
-            
+
             if ($user) {
                 $user->update([
                     'last_seen' => now(),
@@ -429,5 +423,4 @@ class UserController extends Controller
             ], 500);
         }
     }
-    
 }

@@ -27,6 +27,8 @@ use App\Http\Controllers\UserInteractionController;
 use App\Http\Controllers\NetworkingController;
 use App\Http\Controllers\RoommateController;
 use App\Http\Controllers\CompleteRegistrationController;
+use App\Http\Controllers\InviteController;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -277,3 +279,5 @@ Route::get('/items/{item}', [ItemController::class, 'show']);
 
 Route::post('sms/send', [TwilioController::class, 'sendVerificationCode']);
 Route::post('sms/verify', [TwilioController::class, 'verifyCode']);
+
+Route::get('/invite/{token}', [InviteController::class, 'open'])->name('invite.open');

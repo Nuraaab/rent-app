@@ -11,13 +11,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 
-class GroupController extends Controller
-{
+class GroupController extends Controller {
     /**
      * Get all groups with optional filtering.
      */
-    public function index(Request $request): JsonResponse
-    {
+    public function index(Request $request): JsonResponse {
         // Manually authenticate user if token is present (for public routes)
         if ($request->bearerToken()) {
             try {
@@ -31,7 +29,7 @@ class GroupController extends Controller
             }
         }
 
-        $query = Group::with(['creator', 'members']);
+        $query = Group::with(['creator.userPictures', 'members.userPictures']);
 
         // Filter by category
         if ($request->has('category')) {
@@ -56,26 +54,18 @@ class GroupController extends Controller
             $userId = Auth::id();
             foreach ($groups->items() as $group) {
                 // Reload the group with members relationship to ensure pivot data is available
-                $group->load('members');
-                
+                $group->load('members.userPictures');
+
                 $isJoined = $group->members()
                     ->where('users.id', $userId)
                     ->wherePivot('status', 'accepted')
                     ->exists();
-                
+
                 $hasPendingRequest = $group->members()
                     ->where('users.id', $userId)
                     ->wherePivot('status', 'pending')
                     ->exists();
-                
-                // Debug logging
-                Log::info('Group pending request check', [
-                    'group_id' => $group->id,
-                    'user_id' => $userId,
-                    'has_pending_request' => $hasPendingRequest,
-                    'pending_count' => $group->members()->wherePivot('status', 'pending')->count()
-                ]);
-                
+
                 // Convert group to array and add the dynamic fields
                 $groupData = $group->toArray();
                 $groupData['is_joined'] = $isJoined;
@@ -109,19 +99,18 @@ class GroupController extends Controller
     /**
      * Get a specific group by ID.
      */
-    public function show(Group $group): JsonResponse
-    {
+    public function show(Group $group): JsonResponse {
         $group->load(['creator', 'members']);
-        
+
         // Convert group to array
         $groupData = $group->toArray();
-        
+
         // If user is authenticated, add join status and pending request status
         if (Auth::check()) {
             $userId = Auth::id();
             // Reload the group with members relationship to ensure pivot data is available
             $group->load('members');
-            
+
             $groupData['is_joined'] = $group->members()
                 ->where('users.id', $userId)
                 ->wherePivot('status', 'accepted')
@@ -136,7 +125,7 @@ class GroupController extends Controller
             $groupData['has_pending_request'] = false;
             $groupData['can_edit'] = false;
         }
-        
+
         return response()->json([
             'success' => true,
             'data' => $groupData
@@ -146,23 +135,24 @@ class GroupController extends Controller
     /**
      * Create a new group.
      */
-    public function store(CreateGroupRequest $request): JsonResponse
-    {
+    public function store(CreateGroupRequest $request): JsonResponse {
         try {
             $data = $request->validated();
             $data['created_by'] = Auth::id();
 
-            // Handle banner/cover image URL (uploaded via existing upload service)
-            if ($request->has('group_banner_image') && !empty($request->group_banner_image)) {
-                $data['group_banner_image'] = $request->group_banner_image;
-            }
-            
-            // Also check for cover_image field (alternative name)
-            if ($request->has('cover_image') && !empty($request->cover_image)) {
-                $data['group_banner_image'] = $request->cover_image;
+            if ($request->hasFile('group_banner_image')) {
+                $file = $request->file('group_banner_image');
+                $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $destinationPath = public_path('assets/images/groups');
+
+                if (!file_exists($destinationPath)) {
+                    mkdir($destinationPath, 0755, true);
+                }
+
+                $file->move($destinationPath, $fileName);
+                $data['group_banner_image'] = 'assets/images/groups/' . $fileName;
             }
 
-            // Set default values for nullable fields if not provided
             if (!isset($data['privacy'])) {
                 $data['privacy'] = 'open';
             }
@@ -174,10 +164,10 @@ class GroupController extends Controller
             }
 
             $group = Group::create($data);
-            
+
             // Automatically add the creator as a member of the group
             $group->members()->attach($data['created_by']);
-            
+
             $group->load(['creator', 'members']);
 
             return response()->json([
@@ -185,7 +175,6 @@ class GroupController extends Controller
                 'message' => 'Group created successfully',
                 'data' => $group
             ], 201);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -198,18 +187,17 @@ class GroupController extends Controller
     /**
      * Join a group or request to join (for private groups).
      */
-    public function join(Group $group): JsonResponse
-    {
+    public function join(Group $group): JsonResponse {
         try {
             $user = Auth::user();
-            
+
             Log::info('Join group request', [
                 'group_id' => $group->id,
                 'user_id' => $user ? $user->id : 'null',
                 'user_email' => $user ? $user->email : 'null',
                 'privacy' => $group->privacy
             ]);
-            
+
             if (!$user) {
                 Log::error('User not authenticated for join group');
                 return response()->json([
@@ -217,7 +205,7 @@ class GroupController extends Controller
                     'message' => 'User not authenticated'
                 ], 401);
             }
-            
+
             // Check if user is already a member (accepted)
             $existingMember = $group->members()->where('user_id', $user->id)->first();
             if ($existingMember && $existingMember->pivot->status === 'accepted') {
@@ -252,7 +240,7 @@ class GroupController extends Controller
                         'joined_at' => now(),
                     ]);
                 }
-                
+
                 Log::info('Join request created for private group', ['user_id' => $user->id, 'group_id' => $group->id]);
 
                 return response()->json([
@@ -274,7 +262,7 @@ class GroupController extends Controller
                         'joined_at' => now(),
                     ]);
                 }
-                
+
                 Log::info('User successfully joined group', ['user_id' => $user->id, 'group_id' => $group->id]);
 
                 return response()->json([
@@ -283,7 +271,6 @@ class GroupController extends Controller
                     'status' => 'accepted'
                 ]);
             }
-
         } catch (\Exception $e) {
             Log::error('Error joining group', [
                 'group_id' => $group->id,
@@ -301,11 +288,10 @@ class GroupController extends Controller
     /**
      * Leave a group.
      */
-    public function leave(Group $group): JsonResponse
-    {
+    public function leave(Group $group): JsonResponse {
         try {
             $user = Auth::user();
-            
+
             // Check if user is the group creator
             if ($group->created_by === $user->id) {
                 return response()->json([
@@ -313,7 +299,7 @@ class GroupController extends Controller
                     'message' => 'You cannot leave your own group'
                 ], 400);
             }
-            
+
             // Check if user is a member
             if (!$group->hasMember($user->id)) {
                 return response()->json([
@@ -329,7 +315,6 @@ class GroupController extends Controller
                 'success' => true,
                 'message' => 'Successfully left the group'
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -342,24 +327,22 @@ class GroupController extends Controller
     /**
      * Get user's joined groups.
      */
-    public function joined(): JsonResponse
-    {
+    public function joined(): JsonResponse {
         try {
             $userId = Auth::id();
-            
+
             // Get groups where the user is a member
             $groups = Group::whereHas('members', function ($query) use ($userId) {
                 $query->where('user_id', $userId);
             })
-            ->with(['creator', 'members'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+                ->with(['creator', 'members'])
+                ->orderBy('created_at', 'desc')
+                ->get();
 
             return response()->json([
                 'success' => true,
                 'data' => $groups
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error fetching joined groups', [
                 'user_id' => Auth::id(),
@@ -376,8 +359,7 @@ class GroupController extends Controller
     /**
      * Search groups.
      */
-    public function search(Request $request): JsonResponse
-    {
+    public function search(Request $request): JsonResponse {
         try {
             $query = Group::with(['creator', 'members']);
 
@@ -385,8 +367,8 @@ class GroupController extends Controller
                 $searchTerm = $request->search;
                 $query->where(function ($q) use ($searchTerm) {
                     $q->where('title', 'like', "%{$searchTerm}%")
-                      ->orWhere('description', 'like', "%{$searchTerm}%")
-                      ->orWhere('category', 'like', "%{$searchTerm}%");
+                        ->orWhere('description', 'like', "%{$searchTerm}%")
+                        ->orWhere('category', 'like', "%{$searchTerm}%");
                 });
             }
 
@@ -402,7 +384,6 @@ class GroupController extends Controller
                     'total' => $groups->total(),
                 ]
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -415,8 +396,7 @@ class GroupController extends Controller
     /**
      * Update a group.
      */
-    public function update(CreateGroupRequest $request, Group $group): JsonResponse
-    {
+    public function update(CreateGroupRequest $request, Group $group): JsonResponse {
         try {
             $authUserId = Auth::id();
 
@@ -459,7 +439,6 @@ class GroupController extends Controller
                 'message' => 'Group updated successfully',
                 'data' => $group
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -472,11 +451,13 @@ class GroupController extends Controller
     /**
      * Get members of a group (only accepted members).
      */
-    public function members(Group $group): JsonResponse
-    {
+    public function members(Group $group): JsonResponse {
         try {
-            $members = $group->members()->wherePivot('status', 'accepted')->get();
-            
+            $members = $group->members()
+                ->with('userPictures')
+                ->wherePivot('status', 'accepted')
+                ->get();
+
             $formattedMembers = $members->map(function ($member) {
                 return [
                     'id' => $member->id,
@@ -485,6 +466,22 @@ class GroupController extends Controller
                     'email' => $member->email,
                     'profile_image_path' => $member->profile_image_path,
                     'phone_number' => $member->phone_number,
+                    'height' => $member->height,
+                    'pets' => $member->pets,
+                    'children' => $member->children,
+                    'politics' => $member->politics,
+                    'faith_identity' => $member->faith_identity,
+                    'education' => $member->education,
+                    'body_type' => $member->body_type,
+                    'exercise' => $member->exercise,
+                    'user_pictures' => $member->userPictures->map(function ($picture) {
+                        return [
+                            'id' => $picture->id,
+                            'user_id' => $picture->user_id,
+                            'picture_path' => $picture->picture_path,
+                            'picture_url' => $picture->picture_url,
+                        ];
+                    })->values(),
                 ];
             });
 
@@ -492,7 +489,6 @@ class GroupController extends Controller
                 'success' => true,
                 'data' => $formattedMembers
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -505,29 +501,17 @@ class GroupController extends Controller
     /**
      * Get pending join requests for a group (owner only).
      */
-    public function pendingRequests(Group $group): JsonResponse
-    {
+    public function pendingRequests(Group $group): JsonResponse {
         try {
             $user = Auth::user();
-            
+
             if (!$user) {
                 return response()->json([
                     'success' => false,
                     'message' => 'User not authenticated'
                 ], 401);
             }
-            
-            // Check if user is the group owner
-            // Log for debugging
-            Log::info('Pending requests authorization check', [
-                'group_id' => $group->id,
-                'group_created_by' => $group->created_by,
-                'user_id' => $user->id,
-                'match' => $group->created_by == $user->id,
-                'type_group' => gettype($group->created_by),
-                'type_user' => gettype($user->id),
-            ]);
-            
+
             if ($group->created_by != $user->id) {
                 return response()->json([
                     'success' => false,
@@ -540,9 +524,10 @@ class GroupController extends Controller
             }
 
             $pendingRequests = $group->members()
+                ->with('userPictures')
                 ->wherePivot('status', 'pending')
                 ->get();
-            
+
             $formattedRequests = $pendingRequests->map(function ($member) {
                 return [
                     'id' => $member->id,
@@ -551,7 +536,25 @@ class GroupController extends Controller
                     'email' => $member->email,
                     'profile_image_path' => $member->profile_image_path,
                     'phone_number' => $member->phone_number,
+                    'height' => $member->height,
+                    'pets' => $member->pets,
+                    'children' => $member->children,
+                    'politics' => $member->politics,
+                    'faith_identity' => $member->faith_identity,
+                    'education' => $member->education,
+                    'body_type' => $member->body_type,
+                    'exercise' => $member->exercise,
                     'requested_at' => $member->pivot->joined_at,
+                    'user_pictures' => $member->userPictures->map(function ($picture) {
+                        return [
+                            'id' => $picture->id,
+                            'user_id' => $picture->user_id,
+                            'picture_path' => $picture->picture_path,
+                            'picture_url' => $picture->picture_url,
+                            'created_at' => $picture->created_at,
+                            'updated_at' => $picture->updated_at,
+                        ];
+                    })->values(),
                 ];
             });
 
@@ -559,7 +562,6 @@ class GroupController extends Controller
                 'success' => true,
                 'data' => $formattedRequests
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -572,18 +574,17 @@ class GroupController extends Controller
     /**
      * Approve or reject a join request (owner only).
      */
-    public function approveRequest(Group $group, Request $request): JsonResponse
-    {
+    public function approveRequest(Group $group, Request $request): JsonResponse {
         try {
             $user = Auth::user();
-            
+
             if (!$user) {
                 return response()->json([
                     'success' => false,
                     'message' => 'User not authenticated'
                 ], 401);
             }
-            
+
             // Log for debugging
             Log::info('Approve request authorization check', [
                 'group_id' => $group->id,
@@ -593,7 +594,7 @@ class GroupController extends Controller
                 'type_group' => gettype($group->created_by),
                 'type_user' => gettype($user->id),
             ]);
-            
+
             // Check if user is the group owner
             if ($group->created_by != $user->id) {
                 return response()->json([
@@ -645,7 +646,6 @@ class GroupController extends Controller
                     'message' => 'Join request rejected'
                 ]);
             }
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -658,8 +658,7 @@ class GroupController extends Controller
     /**
      * Delete a group.
      */
-    public function destroy(Group $group): JsonResponse
-    {
+    public function destroy(Group $group): JsonResponse {
         try {
             $authUserId = Auth::id();
 
@@ -690,7 +689,6 @@ class GroupController extends Controller
                 'success' => true,
                 'message' => 'Group deleted successfully'
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

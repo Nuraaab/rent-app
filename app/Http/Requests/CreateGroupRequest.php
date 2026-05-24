@@ -43,8 +43,7 @@ class CreateGroupRequest extends FormRequest
             'timezone' => 'nullable|string|max:255',
             'repeat' => 'nullable|string|max:255',
             'admin_approval' => 'nullable|boolean',
-            'group_banner_image' => 'nullable|string|url',
-            'cover_image' => 'nullable|string|url'
+            'group_banner_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
         ];
     }
 

@@ -85,9 +85,17 @@ class ItemController extends Controller
                 'featured' => $request->featured ?? false,
             ];
 
-            // Handle image URL from the upload service
-            if ($request->has('image_url') && !empty($request->image_url)) {
-                $data['image_url'] = $request->image_url;
+            if ($request->hasFile('image')) {
+                $file = $request->file('image');
+                $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $destinationPath = public_path('assets/images/items');
+
+                if (!file_exists($destinationPath)) {
+                    mkdir($destinationPath, 0755, true);
+                }
+
+                $file->move($destinationPath, $fileName);
+                $data['image_url'] = 'assets/images/items/' . $fileName;
             }
 
             $item = Item::create($data);

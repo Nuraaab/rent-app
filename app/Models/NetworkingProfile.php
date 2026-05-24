@@ -15,14 +15,6 @@ class NetworkingProfile extends Model
         'description',
         'cover_image',
         'privacy',
-        'height',
-        'pets',
-        'children',
-        'politics',
-        'faith_identity',
-        'education',
-        'body_type',
-        'exercise',
     ];
 
     protected $casts = [
@@ -31,6 +23,10 @@ class NetworkingProfile extends Model
     ];
 
     protected $appends = ['is_connected', 'connection_count'];
+
+    public function getCoverImageAttribute($value) {
+        return $value ? url($value) : null;
+    }
 
     /**
      * Get the user who created this profile.
